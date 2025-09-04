@@ -203,7 +203,7 @@ import {
 import { defineComponent, computed } from 'vue';
 import { addOutline, cameraOutline, checkmarkDone, checkmarkDoneCircleOutline, copyOutline, cubeOutline, eyeOffOutline, eyeOutline, locationOutline, saveOutline, timeOutline, warningOutline } from 'ionicons/icons';
 import ReceivingHistoryModal from '@/views/ReceivingHistoryModal.vue'
-import { DxpShopifyImg, translate, getProductIdentificationValue, useProductIdentificationStore, useUserStore } from '@hotwax/dxp-components';
+import { DxpShopifyImg, translate, getProductIdentificationValue, useProductIdentificationStore, useUserStore, useAuthStore, openPosScanner } from '@hotwax/dxp-components';
 import { useStore, mapGetters } from 'vuex';
 import { useRouter } from 'vue-router';
 import Scanner from "@/components/Scanner.vue"
@@ -277,7 +277,14 @@ export default defineComponent({
       return imageModal.present();
     },
     async scan() {
-      if (!(await hasWebcamAccess())) {
+      const authStore = useAuthStore();
+
+      if (authStore.isEmbedded) {
+        console.log("This is pos scanner");
+        openPosScanner();
+      } else {
+          console.log("This is not embedded!")
+        if (!(await hasWebcamAccess())) {
         showToast(translate("Camera access not allowed, please check permissons."));
         return;
       } 
@@ -292,6 +299,7 @@ export default defineComponent({
         }
       })
       return modal.present();
+      }
     },
     async updateProductCount(payload: any) {
       if(this.queryString) payload = this.queryString
