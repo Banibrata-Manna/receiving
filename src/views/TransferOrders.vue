@@ -4,6 +4,9 @@
       <ion-toolbar>
         <ion-menu-button slot="start" />
         <ion-title>{{ translate("Transfer Orders") }}</ion-title>
+        <ion-button @click="printPdf()">
+          {{ translate("Print PDF") }}
+        </ion-button>
       </ion-toolbar>
       <div>
         <ion-searchbar :placeholder="translate('Search transfer orders')" v-model="queryString" @keyup.enter="queryString = $event.target.value; getTransferOrders()" />
@@ -68,7 +71,7 @@ import { cloudDownloadOutline, reload } from 'ionicons/icons'
 import { defineComponent, computed } from 'vue';
 import { mapGetters, useStore } from 'vuex';
 import TransferOrderItem from '@/components/TransferOrderItem.vue'
-import { translate, useUserStore } from "@hotwax/dxp-components"
+import { translate, useUserStore, getPackingSlipUrl } from "@hotwax/dxp-components"
 import emitter from '@/event-bus';
 
 export default defineComponent({
@@ -145,7 +148,11 @@ export default defineComponent({
     },
     segmentChanged() {
       this.getTransferOrders();
-    }
+    },
+    async printPdf() {
+    console.log("Printing PDF...");
+    await getPackingSlipUrl();
+  },
   },
   async ionViewWillEnter () {
     await this.getTransferOrders();
