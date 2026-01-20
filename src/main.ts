@@ -32,6 +32,7 @@ import permissionRules from '@/authorization/Rules';
 import permissionActions from '@/authorization/Actions';
 import { dxpComponents } from '@hotwax/dxp-components'
 import { login, logout, loader } from './user-utils';
+import { addNotification, storeClientRegistrationToken } from '@/utils/firebase';
 import { fetchGoodIdentificationTypes, getConfig, initialise, setUserTimeZone, getAvailableTimeZones, getProductIdentificationPref, getUserFacilities, getUserPreference, setProductIdentificationPref, setUserPreference } from '@/adapter'
 import localeMessages from './locales';
 
@@ -48,17 +49,21 @@ const app = createApp(App)
   })
   .use(dxpComponents, {
     Actions,
+    addNotification,
     defaultImgUrl: require("@/assets/images/defaultImage.png"),
     login,
     logout,
     loader,
     appLoginUrl: process.env.VUE_APP_LOGIN_URL as string,
+    appFirebaseConfig: JSON.parse(process.env.VUE_APP_FIREBASE_CONFIG as any),
+    appFirebaseVapidKey: process.env.VUE_APP_FIREBASE_VAPID_KEY,
     getConfig,
     getProductIdentificationPref,
     initialise,
     localeMessages,
     setUserTimeZone,
     setProductIdentificationPref,
+    storeClientRegistrationToken,
     getAvailableTimeZones,
     hasPermission,
     fetchGoodIdentificationTypes,
