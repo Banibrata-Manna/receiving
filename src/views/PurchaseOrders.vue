@@ -20,7 +20,7 @@
     </ion-header>
     <ion-content data-testid="purchase-orders-page-content">
       <main>
-        <PurchaseOrderItem :data-testid="`purchase-orders-page-row-${order.doclist.docs[0].orderId}`" v-for="(order, index) in orders" :key="index" :purchaseOrder="order.doclist.docs[0]" />
+        <PurchaseOrderItem v-for="(order, index) in orders" :key="index" :purchaseOrder="order.doclist.docs[0]" />
         
         <div data-testid="purchase-orders-page-load-more-section" v-if="orders.length < ordersTotal" class="load-more-action ion-text-center">
           <ion-button data-testid="purchase-orders-page-load-more-btn" fill="outline" color="dark" @click="loadMoreOrders()">

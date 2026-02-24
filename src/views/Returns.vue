@@ -21,7 +21,7 @@
     </ion-header>
     <ion-content>
       <main>
-        <ReturnListItem :data-testid="`returns-page-row-${returnShipment.shipmentId}`" v-for="returnShipment in returns" :key="returnShipment.shipmentId" :returnShipment="returnShipment" />
+        <ReturnListItem v-for="returnShipment in returns" :key="returnShipment.shipmentId" :returnShipment="returnShipment" />
 
         <div data-testid="returns-page-load-more-section" v-if="returns.length < returnsTotal" class="load-more-action ion-text-center">
           <ion-button data-testid="returns-page-load-more-btn" fill="outline" color="dark" @click="loadMoreReturns()">

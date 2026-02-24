@@ -21,7 +21,7 @@
     </ion-header>
     <ion-content>
       <main>
-        <ShipmentListItem :data-testid="`shipments-page-row-${shipment.shipmentId}`" v-for="shipment in shipments" :key="shipment.shipmentId" :shipment="shipment"/>
+        <ShipmentListItem v-for="shipment in shipments" :key="shipment.shipmentId" :shipment="shipment"/>
 
         <div data-testid="shipments-page-load-more-section" v-if="shipments.length < shipmentsTotal" class="load-more-action ion-text-center">
           <ion-button data-testid="shipments-page-load-more-btn" fill="outline" color="dark" @click="loadMoreShipments()">

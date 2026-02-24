@@ -25,7 +25,7 @@
     </ion-header>
     <ion-content data-testid="transfer-orders-page-content">
       <main>
-        <TransferOrderItem :data-testid="`transfer-orders-page-row-${order.orderId || order.orderName}`" v-for="(order, index) in orders.list" :key="index" :transferOrder="order" />
+        <TransferOrderItem v-for="(order, index) in orders.list" :key="index" :transferOrder="order" />
         <div data-testid="transfer-orders-page-load-more-section" v-if="orders.list.length < orders.total" class="load-more-action ion-text-center">
           <ion-button data-testid="transfer-orders-page-load-more-btn" fill="outline" color="dark" @click="loadMoreOrders()">
             <ion-icon :icon="cloudDownloadOutline" slot="start" />
