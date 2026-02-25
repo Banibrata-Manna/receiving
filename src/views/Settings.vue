@@ -23,7 +23,7 @@
             </ion-card-header>
           </ion-item>
           <ion-button data-testid="settings-page-logout-btn" color="danger" v-if="!authStore.isEmbedded" @click="logout()">{{ translate("Logout") }}</ion-button>
-          <ion-button data-testid="settings-page-launchpad-btn" :standalone-hidden="!hasPermission(Actions.APP_PWA_STANDALONE_ACCESS)" fill="outline" @click="goToLaunchpad()">
+          <ion-button data-testid="settings-page-launchpad-btn" v-if="!authStore.isEmbedded" :standalone-hidden="!hasPermission(Actions.APP_PWA_STANDALONE_ACCESS)" fill="outline" @click="goToLaunchpad()">
             {{ translate("Go to Launchpad") }}
             <ion-icon slot="end" :icon="openOutline" />
           </ion-button>
