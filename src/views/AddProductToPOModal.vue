@@ -8,9 +8,11 @@
       </ion-buttons>
       <ion-title>{{ translate("Add a product") }}</ion-title>
     </ion-toolbar>
+    <ion-toolbar>
+      <ion-searchbar data-testid="purchase-order-add-product-search-input" @ionFocus="selectSearchBarText($event)" v-model="queryString" :placeholder="translate('Search SKU or product name')" @keyup.enter="handleSearch" @ionInput='handleInput'/>
+    </ion-toolbar>
   </ion-header>
   <ion-content data-testid="purchase-order-add-product-modal-content" ref="contentRef" :scroll-events="true" @ionScroll="enableScrolling()">
-    <ion-searchbar data-testid="purchase-order-add-product-search-input" @ionFocus="selectSearchBarText($event)" v-model="queryString" :placeholder="translate('Search SKU or product name')" @keyup.enter="handleSearch" @ionInput='handleInput'/>
     <template v-if="products.length">
       <ion-list v-for="product in products" :key="product.productId" :data-testid="`purchase-order-add-product-row-${product.productId}`">
         <ion-item lines="none">
