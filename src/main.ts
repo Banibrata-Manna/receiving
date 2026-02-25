@@ -31,7 +31,7 @@ import permissionPlugin, { Actions, hasPermission } from '@/authorization';
 import permissionRules from '@/authorization/Rules';
 import permissionActions from '@/authorization/Actions';
 import { dxpComponents } from '@hotwax/dxp-components'
-import { login, logout, loader } from './user-utils';
+import { login, logout, loader, fetchProducts } from './user-utils';
 import { addNotification, storeClientRegistrationToken } from '@/utils/firebase';
 import { fetchGoodIdentificationTypes, getConfig, initialise, setUserTimeZone, getAvailableTimeZones, getProductIdentificationPref, getUserFacilities, getUserPreference, setProductIdentificationPref, setUserPreference } from '@/adapter'
 import localeMessages from './locales';
@@ -69,7 +69,8 @@ const app = createApp(App)
     fetchGoodIdentificationTypes,
     getUserPreference,
     getUserFacilities,
-    setUserPreference
+    setUserPreference,
+    fetchProducts
   });
 
 // Filters are removed in Vue 3 and global filter introduced https://v3.vuejs.org/guide/migration/filters.html#global-filters
