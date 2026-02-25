@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <ion-content>
+    <ion-content data-testid="shopify-page-content">
       <div class="center-div">
         <p>{{ $t("Installing...") }}</p>
       </div>
