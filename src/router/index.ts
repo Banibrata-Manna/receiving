@@ -17,7 +17,7 @@ import { hasPermission } from '@/authorization';
 import { showToast } from '@/utils'
 
 import 'vue-router'
-import { DxpLogin, translate, useAuthStore, getAppLoginUrl, useUserStore } from '@hotwax/dxp-components';
+import { DxpLogin, translate, useAuthStore, useUserStore } from '@hotwax/dxp-components';
 import { loader } from '@/user-utils';
 
 // Defining types for the meta values
@@ -38,7 +38,7 @@ const authGuard = async (to: any, from: any, next: any) => {
     }
     // TODO use authenticate() when support is there
     const redirectUrl = window.location.origin + '/login'
-    window.location.href = `${getAppLoginUrl()}?redirectUrl=${redirectUrl}`
+    window.location.href = `${process.env.VUE_APP_LOGIN_URL}?redirectUrl=${redirectUrl}`
     loader.dismiss()
   }
   next()

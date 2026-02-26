@@ -17,7 +17,7 @@ import { mapGetters, useStore } from "vuex";
 import { Settings } from 'luxon';
 import { initialise, resetConfig } from '@/adapter'
 import { useRouter } from 'vue-router';
-import { getAppLoginUrl, initialiseFirebaseApp, translate , useAuthStore, useProductIdentificationStore } from "@hotwax/dxp-components"
+import { initialiseFirebaseApp, translate , useAuthStore, useProductIdentificationStore } from "@hotwax/dxp-components"
 import { addNotification, storeClientRegistrationToken } from '@/utils/firebase';
 
 export default defineComponent({
@@ -77,13 +77,13 @@ export default defineComponent({
       }
     },
     async unauthorized() {
-      // Getting the referer launchpad URL and isEmbedded flag here, in case of embedded launchpad the auth state will be reset and isEmbedded will reset to false and we'll end up with regular launchpad url.
-      const appLoginUrl = getAppLoginUrl();
       const isEmbedded = this.authStore.isEmbedded;
+      const shop = this.authStore.shop;
+      const host = this.authStore.host;
       // Mark the user as unauthorised, this will help in not making the logout api call in actions
       this.store.dispatch("user/logout", { isUserUnauthorised: true });
       const redirectUrl = window.location.origin + '/login';
-      window.location.href = isEmbedded? appLoginUrl : `${appLoginUrl}?redirectUrl=${redirectUrl}`;
+      window.location.href = isEmbedded? `${redirectUrl}?embedded=1&shop=${shop}&host=${host}` : `${process.env.VUE_APP_LOGIN_URL}?redirectUrl=${redirectUrl}`;
     }
   },
   created() {

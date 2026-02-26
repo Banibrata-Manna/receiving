@@ -108,7 +108,7 @@ import { getCurrentFacilityId, showToast } from '@/utils';
 import emitter from '@/event-bus';
 import Image from '@/components/Image.vue'
 import { Actions, hasPermission } from '@/authorization';
-import { getAppLoginUrl, initialiseFirebaseApp, translate, useAuthStore, useProductIdentificationStore } from "@hotwax/dxp-components"
+import { initialiseFirebaseApp, translate, useAuthStore, useProductIdentificationStore } from "@hotwax/dxp-components"
 import { addNotification, generateTopicName, isFcmConfigured, storeClientRegistrationToken } from "@/utils/firebase";
 import { NotificationService } from '@/services/NotificationService';
 
@@ -194,12 +194,12 @@ export default defineComponent({
         // if not having redirection url then redirect the user to launchpad
         if (!redirectionUrl) {
           const redirectUrl = window.location.origin + '/login'
-          window.location.href = `${getAppLoginUrl()}?isLoggedOut=true&redirectUrl=${redirectUrl}`
+          window.location.href = `${process.env.VUE_APP_LOGIN_URL}?isLoggedOut=true&redirectUrl=${redirectUrl}`
         }
       })
     },
     goToLaunchpad() {
-      window.location.href = getAppLoginUrl();
+      window.location.href = `${process.env.VUE_APP_LOGIN_URL}`
     },
     setBarcodeIdentificationPref(value: string) {
       this.store.dispatch('util/setBarcodeIdentificationPref', value)
