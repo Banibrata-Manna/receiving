@@ -855,7 +855,7 @@ export default defineComponent({
 
       const payload = {
         facilityId: this.getCurrentFacilityId(),
-        receivedDateTime: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
+        receivedDateTime: DateTime.now().toMillis(),
         items: eligibleItems.map((item: any) => {
           const params = {          
             orderItemSeqId: item.orderItemSeqId,
