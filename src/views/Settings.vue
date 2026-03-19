@@ -64,7 +64,7 @@
           </ion-item>
         </ion-card>
 
-        <ion-card v-if="notificationPrefs.length">
+        <!-- <ion-card v-if="notificationPrefs.length">
           <ion-card-header>
             <ion-card-title>
               {{ translate("Notification Preference") }}
@@ -78,7 +78,7 @@
               <ion-toggle :data-testid="`settings-page-notification-toggle-${pref.enumId}`" label-placement="start" @click.prevent="confirmNotificationPrefUpdate(pref.enumId, $event)" :checked="pref.isEnabled">{{ pref.description }}</ion-toggle>
             </ion-item>
           </ion-list>
-        </ion-card>
+        </ion-card> -->
 
         <ion-card>
           <ion-card-header>
@@ -99,7 +99,7 @@
 </template>
 
 <script lang="ts">
-import { IonAvatar, IonButton, IonCard, IonCardContent, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader,IonIcon, IonItem, IonList, IonMenuButton, IonPage, IonSelect, IonSelectOption, IonTitle, IonToggle, IonToolbar, alertController } from '@ionic/vue';
+import { IonAvatar, IonButton, IonCard, IonCardContent, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader,IonIcon, IonItem, IonMenuButton, IonPage, IonSelect, IonSelectOption, IonTitle, IonToggle, IonToolbar, alertController } from '@ionic/vue';
 import { computed, defineComponent } from 'vue';
 import { openOutline } from 'ionicons/icons'
 import { mapGetters, useStore } from 'vuex';
@@ -125,8 +125,7 @@ export default defineComponent({
     IonContent, 
     IonHeader, 
     IonIcon,
-    IonItem, 
-    IonList,
+    IonItem,
     IonMenuButton,
     IonPage, 
     IonSelect, 

@@ -4,11 +4,11 @@
       <ion-toolbar>
         <ion-menu-button data-testid="transfer-orders-page-menu-btn" slot="start" />
         <ion-title>{{ translate("Transfer Orders") }}</ion-title>
-        <ion-buttons slot="end">
+        <!-- <ion-buttons slot="end">
           <ion-button data-testid="notifications-button" @click="viewNotifications()">
             <ion-icon slot="icon-only" :icon="notificationsOutline" :color="(unreadNotificationsStatus && notifications.length) ? 'primary' : ''" />
           </ion-button>
-        </ion-buttons>
+        </ion-buttons> -->
       </ion-toolbar>
       <div>
         <ion-searchbar data-testid="transfer-orders-page-search-input" :placeholder="translate('Search transfer orders')" v-model="queryString" @keyup.enter="queryString = $event.target.value; getTransferOrders()" />
@@ -55,7 +55,6 @@
 <script lang="ts">
 import {
   IonButton,
-  IonButtons,
   IonContent,
   IonHeader,
   IonIcon,
@@ -81,7 +80,6 @@ export default defineComponent({
   name: 'TransferOrders',
   components: {
     IonButton,
-    IonButtons,
     IonContent,
     IonHeader,
     IonIcon, 

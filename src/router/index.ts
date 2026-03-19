@@ -151,12 +151,12 @@ const routes: Array<RouteRecordRaw> = [
       permissionId: "APP_TRANSFERORDERS_VIEW"
     }
   },
-  {
-    path: '/notifications',
-    name: "Notifications",
-    component: Notifications,
-    beforeEnter: authGuard,
-  }
+  // {
+  //   path: '/notifications',
+  //   name: "Notifications",
+  //   component: Notifications,
+  //   beforeEnter: authGuard,
+  // }
 ]
 
 const router = createRouter({
