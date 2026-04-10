@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { OrderService } from "@/services/OrderService";
+import { api } from "@/adapter";
 import { hasError, showToast, getCurrentFacilityId } from "@/utils";
 import { getProductIdentificationValue, translate } from "@hotwax/dxp-components";
 import emitter from "@/event-bus";
@@ -42,9 +42,13 @@ export const useOrderStore = defineStore("order", {
   actions: {
     async findPurchaseOrders(payload: any) {
       if (payload.json.params.start === 0) emitter.emit("presentLoader");
-      let resp;
+      let resp: any;
       try {
-        resp = await OrderService.fetchPurchaseOrders(payload);
+        resp = await api({
+          url: "/solr-query",
+          method: "POST",
+          data: payload,
+        });
 
         if (resp.status === 200 && !hasError(resp) && resp.data.grouped?.orderId.groups?.length > 0) {
           const orders = resp.data.grouped.orderId;
@@ -106,7 +110,7 @@ export const useOrderStore = defineStore("order", {
     },
 
     async getOrderDetail({ orderId }: { orderId: string }) {
-      let resp;
+      let resp: any;
 
       try {
         const payload = {
@@ -123,7 +127,11 @@ export const useOrderStore = defineStore("order", {
             ],
           },
         };
-        resp = await OrderService.fetchPODetail(payload);
+        resp = await api({
+          url: "/solr-query",
+          method: "POST",
+          data: payload,
+        });
 
         if (resp.status === 200 && !hasError(resp) && resp.data.grouped) {
           const order = resp.data.grouped.orderId.groups[0];
@@ -166,14 +174,18 @@ export const useOrderStore = defineStore("order", {
     },
 
     async createPurchaseShipment(payload: any) {
-      let resp;
+      let resp: any;
       try {
         const params = {
           orderId: payload.orderId,
           facilityId: getCurrentFacilityId(),
         };
 
-        resp = await OrderService.createPurchaseShipment(params);
+        resp = await api({
+          url: "/service/createPurchaseShipment",
+          method: "POST",
+          data: params,
+        });
 
         if (resp.status === 200 && !hasError(resp) && resp.data.shipmentId) {
           const shipmentId = resp.data.shipmentId;
@@ -211,7 +223,7 @@ export const useOrderStore = defineStore("order", {
     },
 
     async createAndReceiveIncomingShipment(payload: any) {
-      let resp;
+      let resp: any;
       try {
         payload.items.map((item: any, index: number) => {
           item.itemSeqId = `1000${index + 1}`;
@@ -225,7 +237,11 @@ export const useOrderStore = defineStore("order", {
           status: "PURCH_SHIP_CREATED",
           items: payload.items,
         };
-        resp = await OrderService.createIncomingShipment({ payload: params });
+        resp = await api({
+          url: "/service/createIncomingShipment",
+          method: "POST",
+          data: { payload: params },
+        });
 
         if (resp.status === 200 && !hasError(resp) && resp.data.shipmentId) {
           const userStore = useUserStore();
@@ -261,7 +277,7 @@ export const useOrderStore = defineStore("order", {
     },
 
     async getPOHistory(payload: any) {
-      let resp;
+      let resp: any;
       let viewIndex = 0;
       const viewSize = 250;
       let currentPOHistory = [] as Array<any>;
@@ -291,7 +307,11 @@ export const useOrderStore = defineStore("order", {
             viewSize,
             viewIndex,
           };
-          resp = await OrderService.fetchPOHistory(params);
+          resp = await api({
+            url: "/performFind",
+            method: "POST",
+            data: params,
+          });
           if (resp.status === 200 && !hasError(resp) && resp.data?.docs.length > 0) {
             currentPOHistory = [...currentPOHistory, ...resp.data.docs];
           }
@@ -325,6 +345,13 @@ export const useOrderStore = defineStore("order", {
       });
 
       return resp;
+    },
+    async updatePOItemStatus(payload: any) {
+      return api({
+        url: "service/changeOrderItemStatus",
+        method: "POST",
+        data: payload,
+      });
     },
     setItemLocationSeqId(payload: any) {
       const item = this.current.items.find((item: any) => item.orderItemSeqId === payload.item.orderItemSeqId);

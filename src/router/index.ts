@@ -5,7 +5,6 @@ import ShipmentDetails from '@/views/ShipmentDetails.vue'
 import Settings from "@/views/Settings.vue"
 import PurchaseOrders from "@/views/PurchaseOrders.vue"
 import PurchaseOrderDetail from "@/views/PurchaseOrderDetail.vue"
-import store from '@/store'
 import Shopify from '@/views/Shopify.vue'
 import Returns from '@/views/Returns.vue'
 import ReturnDetails from '@/views/ReturnDetails.vue'
@@ -15,6 +14,7 @@ import Notifications from '@/views/Notifications.vue'
 
 import { hasPermission } from '@/authorization';
 import { showToast } from '@/utils'
+import { useUserStore as useReceivingUserStore } from '@/store/user';
 
 import 'vue-router'
 import { DxpLogin, translate, useAuthStore, useUserStore } from '@hotwax/dxp-components';
@@ -29,7 +29,8 @@ declare module 'vue-router' {
 
 const authGuard = async (to: any, from: any, next: any) => {
   const authStore = useAuthStore()
-  if (!authStore.isAuthenticated || !store.getters['user/isAuthenticated']) {
+  const userStore = useReceivingUserStore();
+  if (!authStore.isAuthenticated || !userStore.isAuthenticated) {
     await loader.present('Authenticating')
     if (authStore.isEmbedded) {
       next('/login');

@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { UtilService } from "@/services/UtilService";
+import { api, client } from "@/adapter";
 import { hasError, showToast } from "@/utils";
 import { translate } from "@hotwax/dxp-components";
 import { useUserStore } from "@/store/user";
@@ -30,16 +30,20 @@ export const useUtilStore = defineStore("util", {
       if (statusIdFilter.length <= 0) return cachedStatus;
 
       try {
-        const resp = await UtilService.fetchStatus({
-          entityName: "StatusItem",
-          noConditionFind: "Y",
-          distinct: "Y",
-          viewSize: statusIdFilter.length,
-          inputFields: {
-            statusId: statusIdFilter,
-            statusId_op: "in",
+        const resp: any = await api({
+          url: "/performFind",
+          method: "post",
+          data: {
+            entityName: "StatusItem",
+            noConditionFind: "Y",
+            distinct: "Y",
+            viewSize: statusIdFilter.length,
+            inputFields: {
+              statusId: statusIdFilter,
+              statusId_op: "in",
+            },
+            fieldList: ["statusId", "description"],
           },
-          fieldList: ["statusId", "description"],
         });
         if (resp.status === 200 && !hasError(resp) && resp.data?.count) {
           const statuses = resp.data.docs;
@@ -67,7 +71,7 @@ export const useUtilStore = defineStore("util", {
       };
 
       try {
-        const resp = (await UtilService.getProductStoreSetting(payload)) as any;
+        const resp = (await this.getProductStoreSetting(payload)) as any;
         if (!hasError(resp)) {
           const respValue = resp.data.docs[0].settingValue;
           this.isForceScanEnabled = respValue === "true";
@@ -86,8 +90,8 @@ export const useUtilStore = defineStore("util", {
       let isSettingExists = false;
 
       try {
-        if (!(await UtilService.isEnumExists("RECEIVE_FORCE_SCAN"))) {
-          const resp = await UtilService.createEnumeration({
+        if (!(await this.isEnumExists("RECEIVE_FORCE_SCAN"))) {
+          const resp: any = await this.createEnumeration({
             enumId: "RECEIVE_FORCE_SCAN",
             enumTypeId: "PROD_STR_STNG",
             description: "Impose force scanning of items while packing from receiving app",
@@ -106,7 +110,11 @@ export const useUtilStore = defineStore("util", {
           settingValue: "false",
         };
 
-        await UtilService.createForceScanSetting(params);
+        await api({
+          url: "service/createProductStoreSetting",
+          method: "post",
+          data: params,
+        });
         isSettingExists = true;
       } catch (err) {
         console.error(err);
@@ -128,7 +136,7 @@ export const useUtilStore = defineStore("util", {
       let isSettingExists = false;
 
       try {
-        const resp = (await UtilService.getProductStoreSetting({
+        const resp = (await this.getProductStoreSetting({
           inputFields: {
             productStoreId: eComStoreId,
             settingTypeEnumId: "RECEIVE_FORCE_SCAN",
@@ -160,7 +168,11 @@ export const useUtilStore = defineStore("util", {
       };
 
       try {
-        const resp = (await UtilService.updateForceScanSetting(params)) as any;
+        const resp = (await api({
+          url: "service/updateProductStoreSetting",
+          method: "post",
+          data: params,
+        })) as any;
 
         if (!hasError(resp)) {
           showToast(translate("Force scan preference updated successfully."));
@@ -186,7 +198,7 @@ export const useUtilStore = defineStore("util", {
       };
 
       try {
-        const resp = (await UtilService.getProductStoreSetting(payload)) as any;
+        const resp = (await this.getProductStoreSetting(payload)) as any;
         if (!hasError(resp)) {
           const respValue = resp.data.docs[0].settingValue;
           this.barcodeIdentificationPref = respValue;
@@ -205,8 +217,8 @@ export const useUtilStore = defineStore("util", {
       let isSettingExists = false;
 
       try {
-        if (!(await UtilService.isEnumExists("BARCODE_IDEN_PREF"))) {
-          const resp = await UtilService.createEnumeration({
+        if (!(await this.isEnumExists("BARCODE_IDEN_PREF"))) {
+          const resp: any = await this.createEnumeration({
             enumId: "BARCODE_IDEN_PREF",
             enumTypeId: "PROD_STR_STNG",
             description: "Identification preference to be used for scanning items.",
@@ -225,7 +237,11 @@ export const useUtilStore = defineStore("util", {
           settingValue: "internalName",
         };
 
-        await UtilService.createBarcodeIdentificationPref(params);
+        await api({
+          url: "service/createProductStoreSetting",
+          method: "post",
+          data: params,
+        });
         isSettingExists = true;
       } catch (err) {
         console.error(err);
@@ -247,7 +263,7 @@ export const useUtilStore = defineStore("util", {
       let isSettingExists = false;
 
       try {
-        const resp = (await UtilService.getProductStoreSetting({
+        const resp = (await this.getProductStoreSetting({
           inputFields: {
             productStoreId: eComStoreId,
             settingTypeEnumId: "BARCODE_IDEN_PREF",
@@ -279,7 +295,11 @@ export const useUtilStore = defineStore("util", {
       };
 
       try {
-        const resp = (await UtilService.updateBarcodeIdentificationPref(params)) as any;
+        const resp: any = (await api({
+          url: "service/updateProductStoreSetting",
+          method: "post",
+          data: params,
+        })) as any;
 
         if (!hasError(resp)) {
           showToast(translate("Barcode identification preference updated successfully."));
@@ -305,7 +325,7 @@ export const useUtilStore = defineStore("util", {
       };
 
       try {
-        const resp = (await UtilService.getProductStoreSetting(payload)) as any;
+        const resp = (await this.getProductStoreSetting(payload)) as any;
         if (!hasError(resp)) {
           const respValue = resp.data.docs[0].settingValue;
           this.isReceivingByFulfillment = respValue === "true";
@@ -328,7 +348,7 @@ export const useUtilStore = defineStore("util", {
       let isSettingExists = false;
 
       try {
-        const resp = (await UtilService.getProductStoreSetting({
+        const resp = (await this.getProductStoreSetting({
           inputFields: {
             productStoreId: eComStoreId,
             settingTypeEnumId: "RECEIVE_BY_FULFILL",
@@ -356,7 +376,11 @@ export const useUtilStore = defineStore("util", {
       };
 
       try {
-        const resp = (await UtilService.updateReceiveByFulfillmentSetting(params)) as any;
+        const resp = (await api({
+          url: "service/updateProductStoreSetting",
+          method: "post",
+          data: params,
+        })) as any;
 
         if (!hasError(resp)) {
           showToast(translate("Receiving flow preference updated successfully."));
@@ -380,6 +404,58 @@ export const useUtilStore = defineStore("util", {
 
     updateBarcodeIdentificationPref(payload: string) {
       this.barcodeIdentificationPref = payload;
+    },
+    async getProductStoreSetting(payload: any) {
+      return api({
+        url: "performFind",
+        method: "post",
+        data: payload,
+      });
+    },
+    async isEnumExists(enumId: string) {
+      try {
+        const resp = (await api({
+          url: "performFind",
+          method: "POST",
+          data: {
+            entityName: "Enumeration",
+            inputFields: {
+              enumId,
+            },
+            viewSize: 1,
+            fieldList: ["enumId"],
+            noConditionFind: "Y",
+          },
+        })) as any;
+
+        if (!hasError(resp) && resp.data.docs.length) {
+          return true;
+        }
+        return false;
+      } catch (err) {
+        return false;
+      }
+    },
+    async createEnumeration(payload: any) {
+      return api({
+        url: "service/createEnumeration",
+        method: "post",
+        data: payload,
+      });
+    },
+    async fetchShopifyShopLocation(token: string, payload: any) {
+      const userStore = useUserStore();
+      const baseURL = userStore.getBaseUrl;
+      return client({
+        url: "performFind",
+        method: "post",
+        baseURL,
+        headers: {
+          Authorization: "Bearer " + token,
+          "Content-Type": "application/json",
+        },
+        data: payload,
+      });
     },
   },
   persist: true,

@@ -1,11 +1,11 @@
 import { defineStore } from "pinia";
-import { TransferOrderService } from "@/services/TransferOrderService";
-import { hasError } from "@/adapter";
+import { client, hasError } from "@/adapter";
 import { showToast } from "@/utils";
 import { getProductIdentificationValue, translate } from "@hotwax/dxp-components";
 import { useUtilStore } from "@/store/util";
 import { useProductStore } from "@/store/product";
 import { usePartyStore } from "@/store/party";
+import { useUserStore } from "@/store/user";
 
 export const useTransferOrderStore = defineStore("transferorder", {
   state: () => ({
@@ -40,6 +40,19 @@ export const useTransferOrderStore = defineStore("transferorder", {
     getMisShippedItems: (state) => state.misShippedItems,
   },
   actions: {
+    getTransferOrderRequestConfig() {
+      const userStore = useUserStore();
+      const omsRedirectionInfo = userStore.getOmsRedirectionInfo;
+      const baseURL = userStore.getMaargBaseUrl;
+
+      return {
+        baseURL,
+        headers: {
+          api_key: omsRedirectionInfo.token,
+          "Content-Type": "application/json",
+        },
+      };
+    },
     async fetchTransferOrders(params: any = {}) {
       let resp;
       const transferOrderQuery = JSON.parse(JSON.stringify(this.transferOrder.query));
@@ -47,7 +60,13 @@ export const useTransferOrderStore = defineStore("transferorder", {
       let total = 0;
 
       try {
-        resp = await TransferOrderService.fetchTransferOrders(params);
+        const requestConfig = this.getTransferOrderRequestConfig();
+        resp = await client({
+          url: "oms/transferOrders/",
+          method: "get",
+          ...requestConfig,
+          params,
+        });
         if (!hasError(resp) && resp.data.orders.length > 0) {
           total = resp.data.ordersCount;
           if (params.pageIndex && params.pageIndex > 0) {
@@ -76,9 +95,15 @@ export const useTransferOrderStore = defineStore("transferorder", {
       const orderId = payload.orderId;
 
       try {
-        const resp = await TransferOrderService.fetchMisShippedItems({
-          orderId,
-          pageSize: 200,
+        const requestConfig = this.getTransferOrderRequestConfig();
+        const resp = await client({
+          url: `poorti/transferOrders/${orderId}/misShippedItems`,
+          method: "get",
+          ...requestConfig,
+          params: {
+            orderId,
+            pageSize: 200,
+          },
         });
         if (!hasError(resp) && resp.data?.length) {
           misShippedItems = resp.data.map((item: any) => ({
@@ -100,13 +125,22 @@ export const useTransferOrderStore = defineStore("transferorder", {
       const misShippedItems = this.getMisShippedItems;
 
       try {
-        resp = await TransferOrderService.fetchTransferOrderDetail(orderId);
+        const requestConfig = this.getTransferOrderRequestConfig();
+        resp = await client({
+          url: `oms/transferOrders/${orderId}`,
+          method: "get",
+          ...requestConfig,
+        });
 
         if (resp.status === 200 && !hasError(resp) && resp.data.order) {
           order = resp.data.order;
           order.items = order.items.concat(misShippedItems);
 
-          const trackingResp = await TransferOrderService.fetchOrderTrackingDetails(orderId);
+          const trackingResp = await client({
+            url: `poorti/transferShipments/packages?orderId=${orderId}`,
+            method: "get",
+            ...requestConfig,
+          });
           if (!hasError(trackingResp) && trackingResp.data) {
             order.shipmentPackages = trackingResp.data.shipmentPackages;
           } else {
@@ -167,10 +201,16 @@ export const useTransferOrderStore = defineStore("transferorder", {
 
       try {
         do {
-          resp = await TransferOrderService.fetchTransferOrderHistory({
-            ...payload,
-            pageSize,
-            pageIndex,
+          const requestConfig = this.getTransferOrderRequestConfig();
+          resp = await client({
+            url: `poorti/transferOrders/${payload.orderId}/receipts`,
+            method: "get",
+            ...requestConfig,
+            params: {
+              ...payload,
+              pageSize,
+              pageIndex,
+            },
           });
           if (!hasError(resp) && resp.data.length > 0) {
             allHistory = allHistory.concat(resp.data);
@@ -204,7 +244,13 @@ export const useTransferOrderStore = defineStore("transferorder", {
       let resp;
       const payload = { ...params, shipmentStatusId: "SHIPMENT_SHIPPED" };
       try {
-        resp = await TransferOrderService.fetchOutboundShipmentsHistory(payload);
+        const requestConfig = this.getTransferOrderRequestConfig();
+        resp = await client({
+          url: "poorti/transferShipments",
+          method: "get",
+          ...requestConfig,
+          params: payload,
+        });
         if (!hasError(resp)) {
           const shipmentData = resp.data.shipments || [];
 
@@ -230,6 +276,15 @@ export const useTransferOrderStore = defineStore("transferorder", {
         this.current.shipmentHistory = { items: [] };
       }
       return resp;
+    },
+    async receiveTransferOrder(orderId: string, payload: any) {
+      const requestConfig = this.getTransferOrderRequestConfig();
+      return client({
+        url: `poorti/transferOrders/${orderId}/receipts`,
+        method: "post",
+        ...requestConfig,
+        data: payload,
+      });
     },
 
     clearTransferOrderDetail() {

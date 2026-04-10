@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
-import { UserService } from "@/services/UserService";
-import { UtilService } from "@/services/UtilService";
+import { api, client } from "@/adapter";
 import { getCurrentFacilityId, hasError, showToast } from "@/utils";
 import { DateTime, Settings } from "luxon";
 import { logout, updateInstanceUrl, updateToken, resetConfig } from "@/adapter";
@@ -89,7 +88,7 @@ export const useUserStore = defineStore("user", {
         const serverPermissionsFromRules = getServerPermissionsFromRules();
         if (permissionId) serverPermissionsFromRules.push(permissionId);
 
-        const serverPermissions = await UserService.getUserPermissions(
+        const serverPermissions = await this.fetchUserPermissions(
           { permissionIds: [...new Set(serverPermissionsFromRules)] },
           token
         );
@@ -105,8 +104,8 @@ export const useUserStore = defineStore("user", {
           }
         }
 
-        const userProfile = await UserService.getUserProfile(token);
-        const moquiUser = await UserService.getMoquiUserProfile(omsRedirectionUrl, token);
+        const userProfile = await this.fetchUserProfile(token);
+        const moquiUser = await this.fetchMoquiUserProfile(omsRedirectionUrl, token);
         userProfile.moquiUserId = moquiUser.userId;
 
         const isAdminUser = appPermissions.some((appPermission: any) => appPermission?.action === "APP_RECVG_ADMIN");
@@ -137,7 +136,7 @@ export const useUserStore = defineStore("user", {
         const authStore = useAuthStore();
         if (authStore.isEmbedded) {
           const locationId = authStore.posContext.locationId;
-          const resp = await UtilService.fetchShopifyShopLocation(token, {
+          const resp = await useUtilStore().fetchShopifyShopLocation(token, {
             entityName: "ShopifyShopLocation",
             inputFields: { shopifyLocationId: locationId.toString() },
             viewSize: 1,
@@ -153,7 +152,7 @@ export const useUserStore = defineStore("user", {
         }
 
         const currentFacilityId: any = getCurrentFacilityId();
-        const currentEComStore = await UserService.getEComStores(token, currentFacilityId);
+        const currentEComStore = await this.getEComStores(token, currentFacilityId);
         this.currentEComStore = currentEComStore;
         const productStoreId = currentEComStore?.productStoreId;
 
@@ -163,7 +162,7 @@ export const useUserStore = defineStore("user", {
         }
 
         if (omsRedirectionUrl) {
-          const api_key = await UserService.moquiLogin(omsRedirectionUrl, token);
+          const api_key = await this.moquiLogin(omsRedirectionUrl, token);
           if (api_key) {
             this.setOmsRedirectionInfo({ url: omsRedirectionUrl, token: api_key });
           } else {
@@ -254,7 +253,7 @@ export const useUserStore = defineStore("user", {
     async setFacility(facilityId: string) {
       const token = this.token;
       const previousEComStore = (await this.getCurrentEComStore) as any;
-      const eComStore = await UserService.getEComStores(token, facilityId);
+      const eComStore = await this.getEComStores(token, facilityId);
       await this.getFacilityLocations(facilityId);
       const utilStore = useUtilStore();
       if (!Object.keys(eComStore).length) {
@@ -299,7 +298,7 @@ export const useUserStore = defineStore("user", {
       if (facilityLocations) {
         return facilityLocations;
       }
-      let resp;
+      let resp: any;
       const payload = {
         inputFields: { facilityId },
         viewSize: 20,
@@ -309,7 +308,11 @@ export const useUserStore = defineStore("user", {
         noConditionFind: "Y",
       };
       try {
-        resp = await UserService.getFacilityLocations(payload);
+        resp = await api({
+          url: "/performFind",
+          method: "POST",
+          data: payload,
+        });
         if (resp.status === 200 && !hasError(resp) && resp.data?.count > 0) {
           let locations = resp.data.docs;
           locations = locations.map((location: any) => {
@@ -371,6 +374,7 @@ export const useUserStore = defineStore("user", {
 
     async fetchAllNotificationPrefs() {
       let allNotificationPrefs = [];
+      if (!this.current.moquiUserId) return;
       try {
         const resp = await NotificationService.getNotificationUserPrefTypeIds(
           process.env.VUE_APP_NOTIF_APP_ID,
@@ -388,6 +392,7 @@ export const useUserStore = defineStore("user", {
       let notificationPreferences = [],
         enumerationResp = [],
         userPrefIds = [] as any;
+      if (!this.current.moquiUserId) return;
       try {
         enumerationResp = await NotificationService.getNotificationEnumIds(process.env.VUE_APP_NOTIF_ENUM_TYPE_ID);
         const resp = await NotificationService.getNotificationUserPrefTypeIds(
@@ -426,6 +431,192 @@ export const useUserStore = defineStore("user", {
 
     setUnreadNotificationsStatus(payload: boolean) {
       this.hasUnreadNotifications = payload;
+    },
+    async moquiLogin(omsRedirectionUrl: string, token: string) {
+      const baseURL = omsRedirectionUrl.startsWith("http")
+        ? omsRedirectionUrl.includes("/rest/s1/")
+          ? omsRedirectionUrl
+          : `${omsRedirectionUrl}/rest/s1/`
+        : `https://${omsRedirectionUrl}.hotwax.io/rest/s1/`;
+      let api_key = "";
+
+      try {
+        const resp = (await client({
+          url: "admin/login",
+          method: "post",
+          baseURL,
+          params: {
+            token,
+          },
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })) as any;
+        if (!hasError(resp) && (resp.data.api_key || resp.data.token)) {
+          api_key = resp.data.api_key || resp.data.token;
+        } else {
+          throw "Sorry, login failed. Please try again";
+        }
+      } catch (err) {
+        console.error(err);
+        return Promise.reject("Sorry, login failed. Please try again");
+      }
+      return Promise.resolve(api_key);
+    },
+    async fetchUserProfile(token: string) {
+      const baseURL = this.getBaseUrl;
+      try {
+        const resp = await client({
+          url: "user-profile",
+          method: "get",
+          baseURL,
+          headers: {
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json",
+          },
+        });
+        if (hasError(resp)) return Promise.reject("Error getting user profile");
+        return Promise.resolve(resp.data);
+      } catch (error: any) {
+        return Promise.reject(error);
+      }
+    },
+    async fetchMoquiUserProfile(omsRedirectionUrl: string, token: string) {
+      const baseURL = omsRedirectionUrl.startsWith("http")
+        ? omsRedirectionUrl.includes("/rest/s1/")
+          ? omsRedirectionUrl
+          : `${omsRedirectionUrl}/rest/s1/`
+        : `https://${omsRedirectionUrl}.hotwax.io/rest/s1/`;
+
+      try {
+        const resp = (await client({
+          url: "admin/user/profile",
+          method: "get",
+          baseURL,
+          params: {
+            token,
+          },
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })) as any;
+        if (hasError(resp)) return Promise.reject("Error getting user profile: " + JSON.stringify(resp.data));
+        return Promise.resolve(resp.data);
+      } catch (error: any) {
+        return Promise.reject(error);
+      }
+    },
+    async getEComStores(token: string, facilityId: string) {
+      if (!facilityId) {
+        return Promise.resolve({});
+      }
+
+      try {
+        const params = {
+          inputFields: {
+            storeName_op: "not-empty",
+            facilityId,
+          },
+          fieldList: ["productStoreId", "storeName"],
+          entityName: "ProductStoreFacilityDetail",
+          distinct: "Y",
+          noConditionFind: "Y",
+          filterByDate: "Y",
+          viewSize: 1,
+        };
+        const baseURL = this.getBaseUrl;
+        const resp = await client({
+          url: "performFind",
+          method: "get",
+          baseURL,
+          params,
+          headers: {
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json",
+          },
+        });
+        if (hasError(resp)) {
+          throw resp.data;
+        } else {
+          return Promise.resolve(resp.data.docs?.length ? resp.data.docs[0] : {});
+        }
+      } catch (error: any) {
+        return Promise.resolve({});
+      }
+    },
+    async fetchUserPermissions(payload: any, token: string) {
+      const baseURL = this.getBaseUrl;
+      let serverPermissions = [] as any;
+
+      if (payload.permissionIds && payload.permissionIds.length == 0) return serverPermissions;
+      const viewSize = 200;
+
+      try {
+        const params = {
+          viewIndex: 0,
+          viewSize,
+          permissionIds: payload.permissionIds,
+        };
+        const resp = await client({
+          url: "getPermissions",
+          method: "post",
+          baseURL,
+          data: params,
+          headers: {
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json",
+          },
+        });
+        if (resp.status === 200 && resp.data.docs?.length && !hasError(resp)) {
+          serverPermissions = resp.data.docs.map((permission: any) => permission.permissionId);
+          const total = resp.data.count;
+          const remainingPermissions = total - serverPermissions.length;
+          if (remainingPermissions > 0) {
+            const apiCallsNeeded = Math.floor(remainingPermissions / viewSize) + (remainingPermissions % viewSize != 0 ? 1 : 0);
+            const responses = await Promise.all(
+              [...Array(apiCallsNeeded).keys()].map(async (index: any) => {
+                const response = await client({
+                  url: "getPermissions",
+                  method: "post",
+                  baseURL,
+                  data: {
+                    viewIndex: index + 1,
+                    viewSize,
+                    permissionIds: payload.permissionIds,
+                  },
+                  headers: {
+                    Authorization: "Bearer " + token,
+                    "Content-Type": "application/json",
+                  },
+                });
+                if (!hasError(response)) {
+                  return Promise.resolve(response);
+                } else {
+                  return Promise.reject(response);
+                }
+              })
+            );
+            const permissionResponses = {
+              success: [],
+              failed: [],
+            } as any;
+            responses.reduce((permissionResponses: any, permissionResponse: any) => {
+              if (permissionResponse.status !== 200 || hasError(permissionResponse) || !permissionResponse.data?.docs) {
+                permissionResponses.failed.push(permissionResponse);
+              } else {
+                permissionResponses.success.push(permissionResponse);
+              }
+              return permissionResponses;
+            }, permissionResponses);
+            permissionResponses.success.forEach((response: any) => {
+              serverPermissions = serverPermissions.concat(response.data.docs.map((permission: any) => permission.permissionId));
+            });
+          }
+        }
+      } catch (error) {
+        console.error(error);
+      }
+      return serverPermissions;
     },
   },
   persist: true,

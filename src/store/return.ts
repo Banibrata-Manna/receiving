@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ReturnService } from "@/services/ReturnService";
+import { api } from "@/adapter";
 import { hasError, showToast } from "@/utils";
 import { getProductIdentificationValue, translate } from "@hotwax/dxp-components";
 import emitter from "@/event-bus";
@@ -28,9 +28,14 @@ export const useReturnStore = defineStore("return", {
   actions: {
     async findReturn(payload: any) {
       if (payload.viewIndex === 0) emitter.emit("presentLoader");
-      let resp;
+      let resp: any;
       try {
-        resp = await ReturnService.findReturns(payload);
+        resp = await api({
+          url: "/performFind",
+          method: "post",
+          data: payload,
+          cache: true,
+        });
         if (resp.status === 200 && !hasError(resp) && resp.data.docs?.length > 0) {
           let returns = resp.data.docs;
           const statusIds = [...new Set(returns.map((returnShipment: any) => returnShipment.statusId))] as Array<string>;
@@ -74,7 +79,7 @@ export const useReturnStore = defineStore("return", {
     },
 
     async setCurrent(payload: any) {
-      let resp;
+      let resp: any;
       try {
         let returnShipment = this.returns.list.find((shipment: any) => shipment.shipmentId === payload.shipmentId);
 
@@ -87,7 +92,12 @@ export const useReturnStore = defineStore("return", {
             viewSize: 1,
             viewIndex: 0,
           } as any;
-          resp = await ReturnService.findReturns(getReturnShipmentPayload);
+          resp = await api({
+            url: "/performFind",
+            method: "post",
+            data: getReturnShipmentPayload,
+            cache: true,
+          });
           if (resp.status === 200 && !hasError(resp) && resp.data.docs?.length > 0) {
             returnShipment = resp.data.docs[0];
             const utilStore = useUtilStore();
@@ -100,7 +110,11 @@ export const useReturnStore = defineStore("return", {
           }
         }
 
-        resp = await ReturnService.getReturnDetail(payload);
+        resp = await api({
+          url: "shipment-detail",
+          data: payload,
+          method: "post",
+        });
 
         if (resp.status === 200 && !hasError(resp) && resp.data.items) {
           const userStore = useUserStore();
@@ -155,7 +169,11 @@ export const useReturnStore = defineStore("return", {
             unitCost: 0.0,
             locationSeqId: item.locationSeqId,
           };
-          return ReturnService.receiveReturnItem(params).catch((err) => err);
+          return api({
+            url: "receiveShipmentItem",
+            method: "post",
+            data: params,
+          }).catch((err) => err);
         })
       );
     },
@@ -170,9 +188,13 @@ export const useReturnStore = defineStore("return", {
             return;
           }
 
-          const resp = await ReturnService.receiveReturn({
-            shipmentId: payload.shipmentId,
-            statusId: "PURCH_SHIP_RECEIVED",
+          const resp: any = await api({
+            url: "receiveShipment",
+            method: "post",
+            data: {
+              shipmentId: payload.shipmentId,
+              statusId: "PURCH_SHIP_RECEIVED",
+            },
           });
           if (resp.status === 200 && !hasError(resp)) {
             showToast(translate("Return received successfully", { shipmentId: payload.shipmentId }));
@@ -196,18 +218,22 @@ export const useReturnStore = defineStore("return", {
     },
 
     async fetchValidReturnStatuses() {
-      let resp;
+      let resp: any;
       try {
-        resp = await ReturnService.fetchStatusChange({
-          inputFields: {
-            statusIdTo: "PURCH_SHIP_RECEIVED",
-            statusTypeId: "PURCH_SHIP_STATUS",
-            conditionExpression_op: "empty",
+        resp = await api({
+          url: "/performFind",
+          method: "post",
+          data: {
+            inputFields: {
+              statusIdTo: "PURCH_SHIP_RECEIVED",
+              statusTypeId: "PURCH_SHIP_STATUS",
+              conditionExpression_op: "empty",
+            },
+            fieldList: ["statusId", "statusIdTo"],
+            entityName: "StatusValidChangeToDetail",
+            noConditionFind: "Y",
+            viewSize: 100,
           },
-          fieldList: ["statusId", "statusIdTo"],
-          entityName: "StatusValidChangeToDetail",
-          noConditionFind: "Y",
-          viewSize: 100,
         });
 
         if (resp.status == 200 && resp.data.count && !hasError(resp)) {

@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { PartyService } from "@/services/PartyService";
+import { api } from "@/adapter";
 import { hasError } from "@/utils";
 
 export const usePartyStore = defineStore("party", {
@@ -13,7 +13,7 @@ export const usePartyStore = defineStore("party", {
 
       if (!unavailableReceiversLoginIds.length) return this.namesByLoginId;
 
-      let resp;
+      let resp: any;
       const params = {
         inputFields: {
           userLoginId: unavailableReceiversLoginIds,
@@ -25,7 +25,11 @@ export const usePartyStore = defineStore("party", {
         noConditionFind: "Y",
       };
       try {
-        resp = await PartyService.getReceiversDetails(params);
+        resp = await api({
+          url: "performFind",
+          method: "post",
+          data: params,
+        });
         if (resp.status == 200 && !hasError(resp) && resp.data.count > 0) {
           const receiversDetails = resp.data.docs;
 

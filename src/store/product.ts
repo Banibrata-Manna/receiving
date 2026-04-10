@@ -1,7 +1,8 @@
 import { defineStore } from "pinia";
-import { searchProducts } from "@/adapter";
+import { api, searchProducts, hasError } from "@/adapter";
 import emitter from "@/event-bus";
 import { useShipmentStore } from "@/store/shipment";
+import { getCurrentFacilityId } from "@/utils";
 
 export const useProductStore = defineStore("product", {
   state: () => ({
@@ -70,6 +71,31 @@ export const useProductStore = defineStore("product", {
       }
       if (payload.viewIndex === 0) emitter.emit("dismissLoader");
       return resp;
+    },
+    async getInventoryAvailableByFacility(productId: string) {
+      let productQoh = "";
+      const payload = {
+        productId,
+        facilityId: getCurrentFacilityId(),
+      };
+
+      try {
+        const resp: any = await api({
+          url: "service/getInventoryAvailableByFacility",
+          method: "post",
+          data: payload,
+        });
+
+        if (!hasError(resp)) {
+          productQoh = resp?.data.quantityOnHandTotal;
+        } else {
+          throw resp.data;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+
+      return productQoh;
     },
     async fetchProductInformation(payload: any) {
       let productIds: any = new Set();

@@ -1,10 +1,9 @@
 import { defineStore } from "pinia";
-import { ShipmentService } from "@/services/ShipmentService";
+import { api } from "@/adapter";
 import { hasError, showToast, getCurrentFacilityId } from "@/utils";
 import { getProductIdentificationValue, translate } from "@hotwax/dxp-components";
 import emitter from "@/event-bus";
 import { DateTime } from "luxon";
-import { UploadService } from "@/services/UploadService";
 import { useUtilStore } from "@/store/util";
 import { useUserStore } from "@/store/user";
 import { useProductStore } from "@/store/product";
@@ -25,9 +24,14 @@ export const useShipmentStore = defineStore("shipment", {
   actions: {
     async findShipment(payload: any) {
       if (payload.viewIndex === 0) emitter.emit("presentLoader");
-      let resp;
+      let resp: any;
       try {
-        resp = await ShipmentService.fetchShipments(payload);
+        resp = await api({
+          url: "/performFind",
+          method: "post",
+          data: payload,
+          cache: true,
+        });
         if (resp.status === 200 && resp.data.docs?.length > 0 && !hasError(resp)) {
           let shipments = resp.data.docs;
           const statusIds = [...new Set(shipments.map((shipment: any) => shipment.statusId))] as Array<string>;
@@ -35,8 +39,8 @@ export const useShipmentStore = defineStore("shipment", {
           const statuses = await utilStore.fetchStatus(statusIds);
 
           const shipmentIds = shipments.map((shipment: any) => shipment.shipmentId);
-          const shipmentAttributes = await ShipmentService.fetchShipmentAttributes(shipmentIds);
-          const trackingCodes = await ShipmentService.fetchTrackingCodes(shipmentIds);
+          const shipmentAttributes = await this.fetchShipmentAttributes(shipmentIds);
+          const trackingCodes = await this.fetchTrackingCodes(shipmentIds);
 
           shipments.map((shipment: any) => {
             shipment.statusDesc = statuses[shipment.statusId];
@@ -80,13 +84,17 @@ export const useShipmentStore = defineStore("shipment", {
     },
 
     async setCurrent(payload: any) {
-      let resp;
+      let resp: any;
       try {
-        resp = await ShipmentService.getShipmentDetail(payload);
+        resp = await api({
+          url: "shipment-detail",
+          data: payload,
+          method: "post",
+        });
         if (resp.status === 200 && resp.data.items && !hasError(resp)) {
           const shipmentDetail = resp.data;
-          const shipmentAttributes = await ShipmentService.fetchShipmentAttributes([shipmentDetail.shipmentId]);
-          const orderShipmentData = await ShipmentService.fetchOrderShipments(shipmentDetail.shipmentId);
+          const shipmentAttributes = await this.fetchShipmentAttributes([shipmentDetail.shipmentId]);
+          const orderShipmentData = await this.fetchOrderShipments(shipmentDetail.shipmentId);
           shipmentDetail.externalOrderId = shipmentAttributes?.[shipmentDetail.shipmentId]?.["EXTERNAL_ORDER_ID"];
           shipmentDetail.externalOrderName = shipmentAttributes?.[shipmentDetail.shipmentId]?.["EXTERNAL_ORDER_NAME"];
 
@@ -155,7 +163,11 @@ export const useShipmentStore = defineStore("shipment", {
           };
 
           try {
-            const resp = await ShipmentService.receiveShipmentItem(params);
+            const resp: any = await api({
+              url: "receiveShipmentItem",
+              method: "post",
+              data: params,
+            });
             if (hasError(resp)) {
               throw resp.data;
             }
@@ -194,30 +206,42 @@ export const useShipmentStore = defineStore("shipment", {
       });
 
       try {
-        const uploadPayload = UploadService.prepareUploadJsonPayload({
+        const uploadPayload = this.prepareUploadJsonPayload({
           uploadData,
           fileName,
           params,
         });
-        let resp = await UploadService.uploadJsonFile(uploadPayload);
+        let resp: any = await api({
+          url: "uploadAndImportFile",
+          method: "post",
+          ...uploadPayload,
+        });
         if (resp.status == 200 && !hasError(resp)) {
           const uploadFileContentId = resp.data.uploadFileContentId;
           if (uploadFileContentId) {
-            resp = await UploadService.fetchDataManagerLog({
-              inputFields: {
-                configId: "RECEIVE_SHIP_ITEMS",
-                uploadFileContentId: uploadFileContentId,
-                errorRecordContentId_op: "empty",
-                statusI: "SERVICE_FINISHED",
+            resp = await api({
+              url: "/performFind",
+              method: "POST",
+              data: {
+                inputFields: {
+                  configId: "RECEIVE_SHIP_ITEMS",
+                  uploadFileContentId: uploadFileContentId,
+                  errorRecordContentId_op: "empty",
+                  statusI: "SERVICE_FINISHED",
+                },
+                fieldList: ["logId", "configId", "uploadFileContentId", "errorRecordContentId", "statusId"],
+                entityName: "DataManagerLog",
+                viewSize: 1,
               },
-              fieldList: ["logId", "configId", "uploadFileContentId", "errorRecordContentId", "statusId"],
-              entityName: "DataManagerLog",
-              viewSize: 1,
             });
             if (!hasError(resp) && resp.data.docs.length) {
-              resp = await ShipmentService.receiveShipment({
-                shipmentId: payload.shipmentId,
-                statusId: "PURCH_SHIP_RECEIVED",
+              resp = await api({
+                url: "receiveShipment",
+                method: "post",
+                data: {
+                  shipmentId: payload.shipmentId,
+                  statusId: "PURCH_SHIP_RECEIVED",
+                },
               });
               if (resp.status == 200 && !hasError(resp)) {
                 return true;
@@ -242,9 +266,13 @@ export const useShipmentStore = defineStore("shipment", {
       const areAllSuccess = await this.receiveShipmentItem(payload);
       if (areAllSuccess) {
         try {
-          const resp = await ShipmentService.receiveShipment({
-            shipmentId: payload.shipmentId,
-            statusId: "PURCH_SHIP_RECEIVED",
+          const resp: any = await api({
+            url: "receiveShipment",
+            method: "post",
+            data: {
+              shipmentId: payload.shipmentId,
+              statusId: "PURCH_SHIP_RECEIVED",
+            },
           });
 
           if (resp.status == 200 && !hasError(resp)) {
@@ -276,7 +304,11 @@ export const useShipmentStore = defineStore("shipment", {
         shipmentItemSeqId: payload.shipmentItemSeqId,
         locationSeqId: product.locationSeqId,
       };
-      const resp = await ShipmentService.addShipmentItem(params);
+      const resp: any = await api({
+        url: "addShipmentItem",
+        method: "post",
+        data: params,
+      });
       if (resp.status == 200 && !hasError(resp) && resp.data.shipmentId && resp.data.shipmentItemSeqId) {
         this.updateProductCount({ shipmentId: resp.data.shipmentId });
         if (!payload.shipmentId) {
@@ -313,6 +345,129 @@ export const useShipmentStore = defineStore("shipment", {
       if (item) {
         item.locationSeqId = payload.locationSeqId;
       }
+    },
+    prepareUploadJsonPayload(request: any) {
+      const blob = new Blob([JSON.stringify(request.uploadData)], { type: "application/json" });
+      const formData = new FormData();
+      const fileName = request.fileName ? request.fileName : Date.now() + ".json";
+
+      formData.append("uploadedFile", blob, fileName);
+
+      if (request.params) {
+        for (const key in request.params) {
+          formData.append(key, request.params[key]);
+        }
+      }
+
+      return {
+        data: formData,
+        headers: {
+          "Content-Type": "multipart/form-data;",
+        },
+      };
+    },
+    async fetchTrackingCodes(shipmentIds: Array<string>) {
+      let shipmentTrackingCodes = {} as any;
+      const params = {
+        entityName: "ShipmentRouteSegment",
+        inputFields: {
+          shipmentId: shipmentIds,
+          shipmentId_op: "in",
+        },
+        fieldList: ["shipmentId", "trackingIdNumber"],
+        viewSize: 250,
+        distinct: "Y",
+      };
+
+      try {
+        const resp = await api({
+          url: "performFind",
+          method: "get",
+          params,
+        });
+
+        if (!hasError(resp)) {
+          shipmentTrackingCodes = resp?.data.docs.reduce(
+            (codes: any, item: any) => ((codes[item.shipmentId] = item.trackingIdNumber), codes),
+            {}
+          );
+        } else if (!resp?.data.error || (resp.data.error && resp.data.error !== "No record found")) {
+          return Promise.reject(resp?.data.error);
+        }
+      } catch (err) {
+        console.error("Failed to fetch tracking codes for shipments", err);
+      }
+
+      return shipmentTrackingCodes;
+    },
+    async fetchShipmentAttributes(shipmentIds: Array<string>) {
+      const shipmentAttributes = {} as any;
+      const params = {
+        entityName: "ShipmentAttribute",
+        inputFields: {
+          shipmentId: shipmentIds,
+          shipmentId_op: "in",
+        },
+        fieldList: ["shipmentId", "attrName", "attrValue"],
+        viewSize: 250,
+        distinct: "Y",
+      };
+
+      try {
+        const resp: any = await api({
+          url: "performFind",
+          method: "get",
+          params,
+        });
+
+        if (!hasError(resp)) {
+          resp?.data.docs.forEach((attribute: any) => {
+            const { shipmentId, attrName, attrValue } = attribute;
+            if (!shipmentAttributes[shipmentId]) {
+              shipmentAttributes[shipmentId] = {};
+            }
+            shipmentAttributes[shipmentId][attrName] = attrValue;
+          });
+        } else if (!resp?.data.error || (resp.data.error && resp.data.error !== "No record found")) {
+          return Promise.reject(resp?.data.error);
+        }
+      } catch (err) {
+        console.error("Failed to fetch shipment attributes", err);
+      }
+
+      return shipmentAttributes;
+    },
+    async fetchOrderShipments(shipmentId: string) {
+      let orderShipmentData = {} as any;
+      const params = {
+        entityName: "OrderShipment",
+        inputFields: {
+          shipmentId,
+        },
+        viewSize: 250,
+      };
+
+      try {
+        const resp: any = await api({
+          url: "performFind",
+          method: "get",
+          params,
+        });
+
+        if (!hasError(resp)) {
+          orderShipmentData = resp?.data?.docs.reduce((shipmentData: any, shipment: any) => {
+            const key = `${shipment.shipmentId}-${shipment.shipmentItemSeqId}`;
+            shipmentData[key] = shipment;
+            return shipmentData;
+          }, {});
+        } else {
+          throw resp.data;
+        }
+      } catch (err) {
+        console.error("Failed to fetch order shipments", err);
+      }
+
+      return orderShipmentData;
     },
   },
   persist: true,

@@ -48,7 +48,6 @@ import { arrowBackOutline, saveOutline } from 'ionicons/icons';
 import { computed, onMounted } from 'vue';
 import { useOrderStore } from '@/store/order';
 import { useProductStore } from '@/store/product';
-import { OrderService } from "@/services/OrderService";
 import { DxpShopifyImg, translate, getProductIdentificationValue, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { useRouter } from 'vue-router';
 import { copyToClipboard, getFeatures, hasError } from '@/utils';
@@ -117,7 +116,7 @@ const updatePOItemStatus = async () => {
       const itemsToUpdate = itemsToBatchUpdate.splice(0, batchSize)
 
       const responses = await Promise.allSettled(itemsToUpdate.map(async(item: any) => {
-        await OrderService.updatePOItemStatus({
+        await orderStore.updatePOItemStatus({
           orderId: item.orderId,
           orderItemSeqId: item.orderItemSeqId,
           statusId: "ITEM_COMPLETED"
@@ -138,7 +137,7 @@ const updatePOItemStatus = async () => {
   }
 
   try{
-    const resp = await OrderService.updatePOItemStatus({
+    const resp = await orderStore.updatePOItemStatus({
       orderId: lastItem.orderId,
       orderItemSeqId: lastItem.orderItemSeqId,
       statusId: "ITEM_COMPLETED"

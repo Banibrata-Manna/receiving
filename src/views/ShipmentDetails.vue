@@ -104,10 +104,9 @@ import Scanner from "@/components/Scanner.vue";
 import ImageModal from '@/components/ImageModal.vue';
 import { getFeatures, showToast, hasWebcamAccess } from '@/utils'
 import { Actions, hasPermission } from '@/authorization'
-import { ProductService } from '@/services/ProductService';
-import { useStore as useShipmentStore } from '@/store/shipment';
-import { useStore as useProductStore } from '@/store/product';
-import { useStore as useUtilStore } from '@/store/util';
+import { useShipmentStore } from '@/store/shipment';
+import { useProductStore } from '@/store/product';
+import { useUtilStore } from '@/store/util';
 
 const route = useRoute();
 const router = useRouter();
@@ -183,7 +182,7 @@ const observeProductVisibility = () => {
 };
 
 const fetchQuantityOnHand = async (productId: any) => {
-  productQoh.value[productId] = await ProductService.getInventoryAvailableByFacility(productId);
+  productQoh.value[productId] = await productStore.getInventoryAvailableByFacility(productId);
 };
 
 const completeShipment = async () => {

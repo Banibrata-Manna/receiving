@@ -56,7 +56,7 @@ import { computed, onMounted, ref } from 'vue'
 import ReturnListItem from '@/components/ReturnListItem.vue'
 import { translate, useUserStore as useDxpUserStore } from "@hotwax/dxp-components"
 import { useRouter } from 'vue-router';
-import { useStore as useReturnStore } from '@/store/return';
+import { useReturnStore } from '@/store/return';
 
 const router = useRouter();
 const dxpUserStore = useDxpUserStore();

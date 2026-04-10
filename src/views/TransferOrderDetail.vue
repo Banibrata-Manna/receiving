@@ -367,10 +367,8 @@ import Scanner from "@/components/Scanner.vue"
 import ImageModal from '@/components/ImageModal.vue';
 import { copyToClipboard, getFeatures, hasError, showToast, hasWebcamAccess } from '@/utils';
 import { Actions, hasPermission } from '@/authorization'
-import { TransferOrderService } from '@/services/TransferOrderService';
 import AddProductToTOModal from '@/components/AddProductToTOModal.vue';
 import { DateTime } from 'luxon';
-import { ProductService } from '@/services/ProductService';
 import emitter from "@/event-bus";
 import ReceivingInstructions from '@/components/ReceivingInstructions.vue';
 import ReceiveTransferOrder from '@/components/ReceiveTransferOrder.vue';
@@ -799,7 +797,7 @@ const receiveTransferOrder = async (isClosingTO = false) => {
   };
 
   try {
-    const resp = await TransferOrderService.receiveTransferOrder(order.value.orderId, payload);
+    const resp = await transferOrderStore.receiveTransferOrder(order.value.orderId, payload);
     if (!hasError(resp)) {
       showToast(translate("Transfer order received successfully", { orderId: order.value.orderId }));
       router.push('/transfer-orders');
@@ -852,7 +850,7 @@ const observeProductVisibility = () => {
 };
 
 const fetchQuantityOnHand = async (productId: any) => {
-  productQoh.value[productId] = await ProductService.getInventoryAvailableByFacility(productId);
+  productQoh.value[productId] = await productStore.getInventoryAvailableByFacility(productId);
 };
 
 const openTOReceivingInstructions = async () => {

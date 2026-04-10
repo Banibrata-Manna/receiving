@@ -110,11 +110,11 @@ import { Actions, hasPermission } from '@/authorization';
 import { initialiseFirebaseApp, translate, useAuthStore, useProductIdentificationStore } from "@hotwax/dxp-components"
 import { addNotification, generateTopicName, isFcmConfigured, storeClientRegistrationToken } from "@/utils/firebase";
 import { NotificationService } from '@/services/NotificationService';
-import { useStore as useUserStore } from '@/store/user';
-import { useStore as useUtilStore } from '@/store/util';
-import { useStore as useShipmentStore } from '@/store/shipment';
-import { useStore as useReturnStore } from '@/store/return';
-import { useStore as usePartyStore } from '@/store/party';
+import { useUserStore } from '@/store/user';
+import { useUtilStore } from '@/store/util';
+import { useShipmentStore } from '@/store/shipment';
+import { useReturnStore } from '@/store/return';
+import { usePartyStore } from '@/store/party';
 
 const router = useRouter();
 const userStore = useUserStore();

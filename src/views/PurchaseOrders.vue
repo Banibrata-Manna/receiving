@@ -55,7 +55,7 @@ import { computed, ref } from 'vue';
 import PurchaseOrderItem from '@/components/PurchaseOrderItem.vue'
 import { translate, useUserStore as useDxpUserStore } from "@hotwax/dxp-components"
 import { useRouter } from 'vue-router';
-import { useStore as useOrderStore } from '@/store/order';
+import { useOrderStore } from '@/store/order';
 
 const router = useRouter();
 const dxpUserStore = useDxpUserStore();

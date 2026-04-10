@@ -23,7 +23,7 @@
 import { IonContent, IonIcon, IonHeader, IonItem, IonLabel, IonList, IonTitle, IonToolbar, IonMenu, IonMenuToggle } from "@ionic/vue";
 import { computed } from "vue";
 import { businessOutline, calendar, download, gitPullRequestOutline, settings } from "ionicons/icons";
-import { useStore as useUserStore } from "@/store/user";
+import { useUserStore } from "@/store/user";
 import { useUserStore as useDxpUserStore } from "@hotwax/dxp-components"
 import { useRouter } from "vue-router";
 import { hasPermission } from "@/authorization";
