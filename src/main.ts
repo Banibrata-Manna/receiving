@@ -26,7 +26,8 @@ import '@ionic/vue/css/display.css';
 /* Theme variables */
 import './theme/variables.css';
 
-import store from './store'
+import { createPinia } from 'pinia'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import permissionPlugin, { Actions, hasPermission } from '@/authorization';
 import permissionRules from '@/authorization/Rules';
 import permissionActions from '@/authorization/Actions';
@@ -35,6 +36,10 @@ import { login, logout, loader, fetchProducts } from './user-utils';
 import { addNotification, storeClientRegistrationToken } from '@/utils/firebase';
 import { fetchGoodIdentificationTypes, getConfig, initialise, setUserTimeZone, getAvailableTimeZones, getProductIdentificationPref, getUserFacilities, getUserPreference, setProductIdentificationPref, setUserPreference } from '@/adapter'
 import localeMessages from './locales';
+import { useUserStore } from '@/store/user'
+
+const pinia = createPinia();
+pinia.use(piniaPluginPersistedstate);
 
 const app = createApp(App)
   .use(IonicVue, {
@@ -42,7 +47,7 @@ const app = createApp(App)
     innerHTMLTemplatesEnabled: true // added this entry to enable html support inside alert, and toast
   })
   .use(router)
-  .use(store)
+  .use(pinia)
   .use(permissionPlugin, {
     rules: permissionRules,
     actions: permissionActions
@@ -84,7 +89,8 @@ app.config.globalProperties.$filters = {
   formatUtcDate(value: any, inFormat?: any, outFormat?: string) {
     // TODO Use Loxon instead
     // TODO Make default format configurable and from environment variables
-    const userProfile = store.getters['user/getUserProfile'];
+    const userStore = useUserStore();
+    const userProfile = userStore.getUserProfile;
     // TODO Fix this setDefault should set the default timezone instead of getting it everytime and setting the tz
     return DateTime.fromISO(value, { zone: "utc" }).setZone(userProfile.userTimeZone).toFormat(outFormat ? outFormat : 'MM-dd-yyyy')
   },

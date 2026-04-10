@@ -36,110 +36,72 @@
   </ion-content>
 </template>
 
-<script>
-import {
-  IonButton,
-  IonButtons,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonItem,
-  IonLabel,
-  IonList,
-  IonNote,
-  IonThumbnail,
-  IonTitle,
-  IonToolbar,
-  modalController,
-} from '@ionic/vue';
-import { defineComponent, computed } from 'vue';
+<script setup lang="ts">
+import { IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonThumbnail, IonTitle, IonToolbar, modalController } from '@ionic/vue';
+import { computed } from 'vue';
 import { closeOutline } from 'ionicons/icons';
 import { DxpShopifyImg, translate, getProductIdentificationValue, useProductIdentificationStore } from '@hotwax/dxp-components';
-import { mapGetters, useStore } from "vuex";
+import { useOrderStore } from '@/store/order';
+import { useTransferOrderStore } from '@/store/transferorder';
+import { useProductStore } from '@/store/product';
 import { DateTime } from 'luxon';
 
-export default defineComponent({
-  name: "ReceivingHistoryModal",
-  components: {
-    DxpShopifyImg,
-    IonButton,
-    IonButtons,
-    IonContent,
-    IonHeader,
-    IonIcon,
-    IonItem,
-    IonLabel,
-    IonList,
-    IonNote,
-    IonThumbnail,
-    IonTitle,
-    IonToolbar,
-  },
-  props: {
-    productId: String,
-    orderItemSeqId: String,
-    orderType: {
-      type: String,
-      default: 'purchaseOrder',
-      validator: val => ['transferOrder', 'purchaseOrder'].includes(val)
-    }
-  },
-  computed: {
-    ...mapGetters({
-      poHistory: 'order/getPOHistory',
-      toHistory: 'transferorder/getTOHistory',
-      getProduct: 'product/getProduct'
-    }),
-    items() {
-      const history = this.orderType === 'purchaseOrder' ? this.poHistory : this.toHistory;
-      if (!history?.items) return [];
-      
-      if (this.orderItemSeqId) {
-        return history.items.filter(item => item.orderItemSeqId === this.orderItemSeqId)
-      } else if (this.productId) {
-        return history.items.filter(item => item.productId === this.productId)
-      } else {
-        return history.items;
-      }
-    },
-    emptyStateMessage() {
-      if (this.productId) {
-        const product = this.getProduct(this.productId);
-        const identifier =
-          this.getProductIdentificationValue(this.productIdentificationPref.primaryId, product) ||
-          this.getProductIdentificationValue(this.productIdentificationPref.secondaryId, product) ||
-          product?.productName ||
-          product.productId;
-        return this.translate("No receipts have been created against yet", { lineBreak: '<br />', productIdentifier: identifier });
-      }
-      if (this.orderType === 'transferOrder') {
-        return this.translate("No receipts have been created against this transfer order yet", { lineBreak: '<br />' });
-      }
-      return this.translate("No shipments have been received against this purchase order yet", { lineBreak: '<br />' });
-    }
-  },
-  methods: {
-    closeModal() {
-      modalController.dismiss({ dismissed: true });
-    },
-    getTime(time) {
-      return DateTime.fromMillis(time).toFormat("H:mm a dd/MM/yyyy")
-    }
-  },
-  setup() {
-    const store = useStore();
-    const productIdentificationStore = useProductIdentificationStore();
-    let productIdentificationPref = computed(() => productIdentificationStore.getProductIdentificationPref);
-
-    return {
-      closeOutline,
-      store,
-      translate,
-      getProductIdentificationValue,
-      productIdentificationPref
-    };
-  },
+const props = defineProps({
+  productId: String,
+  orderItemSeqId: String,
+  orderType: {
+    type: String,
+    default: 'purchaseOrder',
+    validator: (val: string) => ['transferOrder', 'purchaseOrder'].includes(val)
+  }
 });
+
+const orderStore = useOrderStore();
+const transferOrderStore = useTransferOrderStore();
+const productStore = useProductStore();
+const productIdentificationStore = useProductIdentificationStore();
+
+const poHistory = computed(() => orderStore.getPOHistory);
+const toHistory = computed(() => transferOrderStore.getTOHistory);
+const getProduct = computed(() => productStore.getProduct);
+const productIdentificationPref = computed(() => productIdentificationStore.getProductIdentificationPref);
+
+const items = computed(() => {
+  const history = props.orderType === 'purchaseOrder' ? poHistory.value : toHistory.value;
+  if (!history?.items) return [];
+  
+  if (props.orderItemSeqId) {
+    return history.items.filter((item: any) => item.orderItemSeqId === props.orderItemSeqId)
+  } else if (props.productId) {
+    return history.items.filter((item: any) => item.productId === props.productId)
+  } else {
+    return history.items;
+  }
+});
+
+const emptyStateMessage = computed(() => {
+  if (props.productId) {
+    const product = getProduct.value(props.productId);
+    const identifier =
+      getProductIdentificationValue(productIdentificationPref.value.primaryId, product) ||
+      getProductIdentificationValue(productIdentificationPref.value.secondaryId, product) ||
+      product?.productName ||
+      product?.productId;
+    return translate("No receipts have been created against yet", { lineBreak: '<br />', productIdentifier: identifier });
+  }
+  if (props.orderType === 'transferOrder') {
+    return translate("No receipts have been created against this transfer order yet", { lineBreak: '<br />' });
+  }
+  return translate("No shipments have been received against this purchase order yet", { lineBreak: '<br />' });
+});
+
+const closeModal = () => {
+  modalController.dismiss({ dismissed: true });
+};
+
+const getTime = (time: any) => {
+  return DateTime.fromMillis(time).toFormat("H:mm a dd/MM/yyyy")
+};
 </script>
 
 <style scoped>

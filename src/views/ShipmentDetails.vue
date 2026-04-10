@@ -93,301 +93,234 @@
   </ion-page>
 </template>
 
-<script lang="ts">
-import {
-  IonBackButton,
-  IonBadge,
-  IonButton,
-  IonButtons,
-  IonCard,
-  IonContent,
-  IonHeader,
-  IonFab,
-  IonFabButton,
-  IonIcon,
-  IonItem,
-  IonInput,
-  IonLabel,
-  IonPage,
-  IonProgressBar,
-  IonThumbnail,
-  IonTitle,
-  IonToolbar,
-  IonChip,
-  modalController,
-  alertController,
-} from '@ionic/vue';
-import { defineComponent, computed } from 'vue';
+<script setup lang="ts">
+import { IonBackButton, IonBadge, IonButton, IonButtons, IonCard, IonContent, IonHeader, IonFab, IonFabButton, IonIcon, IonItem, IonInput, IonLabel, IonPage, IonProgressBar, IonThumbnail, IonTitle, IonToolbar, IonChip, modalController, alertController, onIonViewDidLeave } from '@ionic/vue';
+import { computed, onMounted, ref } from 'vue';
 import { add, checkmarkDone, checkmarkDoneCircleOutline, cameraOutline, cubeOutline, locationOutline, warningOutline } from 'ionicons/icons';
-import { mapGetters, useStore } from "vuex";
 import AddProductModal from '@/views/AddProductModal.vue'
 import { DxpShopifyImg, translate, getProductIdentificationValue, useProductIdentificationStore, useAuthStore, openPosScanner } from '@hotwax/dxp-components';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import Scanner from "@/components/Scanner.vue";
 import ImageModal from '@/components/ImageModal.vue';
 import { getFeatures, showToast, hasWebcamAccess } from '@/utils'
 import { Actions, hasPermission } from '@/authorization'
 import { ProductService } from '@/services/ProductService';
+import { useStore as useShipmentStore } from '@/store/shipment';
+import { useStore as useProductStore } from '@/store/product';
+import { useStore as useUtilStore } from '@/store/util';
 
-export default defineComponent({
-  name: "ShipmentDetails",
-  components: {
-    IonBackButton,
-    IonBadge,
-    IonButton,
-    IonButtons,
-    IonCard,
-    IonContent,
-    IonHeader,
-    IonFab,
-    IonFabButton,
-    IonIcon,
-    IonItem,
-    IonInput,
-    IonLabel,
-    IonPage,
-    IonProgressBar,
-    IonThumbnail,
-    IonTitle,
-    IonToolbar,
-    DxpShopifyImg,
-    IonChip,
-  },
-  props: ["shipment"],
-  data() {
-    return {
-      queryString: '',
-      lastScannedId: '',
-      productQoh: {} as any,
-      observer: {} as IntersectionObserver
-    }
-  },
-  async mounted() {
-    await this.store.dispatch('shipment/setCurrent', { shipmentId: this.$route.params.id })
-    this.observeProductVisibility();
-  },
-  ionViewDidLeave() {
-    this.productQoh = {};
-  },
-  computed: {
-    ...mapGetters({
-      current: 'shipment/getCurrent',
-      getProduct: 'product/getProduct',
-      facilityLocationsByFacilityId: 'user/getFacilityLocationsByFacilityId',
-      isForceScanEnabled: 'util/isForceScanEnabled',
-      barcodeIdentifier: 'util/getBarcodeIdentificationPref',
-    }),
-  },
-  methods: {
-    getRcvdToOrdrdFraction(item: any){
-      return item.quantityAccepted / item.quantityOrdered;
-    },
-    isShipmentReceived() {
-      return this.current?.statusId === 'PURCH_SHIP_RECEIVED'
-    },
-    async openImage(imageUrl: string, productName: string) {
-      const imageModal = await modalController.create({
-        component: ImageModal,
-        componentProps: { imageUrl , productName }
-      });
-      return imageModal.present();
-    },
-    async addProduct() {
-      const modal = await modalController
-        .create({
-          component: AddProductModal
-        })
-        modal.onDidDismiss()
-        .then( () => {
-          this.store.dispatch('product/clearSearchedProducts')
-          this.observeProductVisibility();
-        })
-      return modal.present();
-    },
-    observeProductVisibility() {
-      if(this.observer.root) {
-        this.observer.disconnect();
-      }
+const route = useRoute();
+const router = useRouter();
+const shipmentStore = useShipmentStore();
+const productStore = useProductStore();
+const utilStore = useUtilStore();
+const productIdentificationStore = useProductIdentificationStore();
+const authStore = useAuthStore();
 
-      this.observer = new IntersectionObserver((entries: any) => {
-        entries.forEach((entry: any) => {
-          if (entry.isIntersecting) {
-            const productId = entry.target.getAttribute('data-product-id');
-            if (productId && !this.productQoh[productId]) {
-              this.fetchQuantityOnHand(productId);
-            }
-          }
-        });
-      }, {
-        root: null,
-        threshold: 0.4
-      });
+const queryString = ref('');
+const lastScannedId = ref('');
+const productQoh = ref({} as any);
+const observer = ref({} as IntersectionObserver);
 
-      const products = document.querySelectorAll('.product');
-      if (products) {
-        products.forEach((product: any) => {
-          this.observer.observe(product);
-        });
-      }
-    },
-    async fetchQuantityOnHand(productId: any) {
-      this.productQoh[productId] = await ProductService.getInventoryAvailableByFacility(productId);  
-    },
-    async completeShipment() {
-      const alert = await alertController.create({
-        header: translate("Receive Shipment"),
-        message: translate("Make sure you have entered all the inventory you received. You cannot edit this information after proceeding.", {space: '<br /><br />'}),
-        buttons: [
-          {
-            text: translate("Cancel"),
-            role: 'cancel',
-          }, 
-          {
-            text:translate('Proceed'),
-            handler: () => {
-              this.receiveShipment();
-            },
-          }
-        ],
-      });
-      return alert.present();
-    },
-    async receiveShipment() {
-      const eligibleItems = this.current.items.filter((item: any) => item.quantityAccepted > 0)
-      const shipmentId = this.current.shipment ? this.current.shipment.shipmentId : this.current.shipmentId 
-      const isShipmentReceived = await this.store.dispatch('shipment/receiveShipmentJson', { items: eligibleItems, shipmentId })
-      if (isShipmentReceived) {
-        showToast(translate("Shipment received successfully", { shipmentId: shipmentId }))
-        this.router.push('/shipments');
-      } else {
-        showToast(translate("Failed to receive shipment"))
-        this.store.dispatch('shipment/setCurrent', { shipmentId: this.$route.params.id })
-      }
-    },
-    isEligibleForReceivingShipment() {
-      return this.current.items.some((item: any) => item.quantityAccepted > 0)
-    },
-    receiveAll(item: any) {
-      this.current.items.find((ele: any) => {
-        if(ele.itemSeqId == item.itemSeqId) {
-          ele.quantityAccepted = ele.quantityOrdered;
-          ele.progress = ele.quantityAccepted / ele.quantityOrdered
-          return true;
+const current = computed(() => shipmentStore.getCurrent);
+const getProduct = computed(() => productStore.getProduct);
+const isForceScanEnabled = computed(() => utilStore.isForceScanEnabled);
+const barcodeIdentifier = computed(() => utilStore.getBarcodeIdentificationPref);
+const productIdentificationPref = computed(() => productIdentificationStore.getProductIdentificationPref);
+
+const getRcvdToOrdrdFraction = (item: any) => {
+  return item.quantityAccepted / item.quantityOrdered;
+};
+
+const isShipmentReceived = () => {
+  return current.value?.statusId === 'PURCH_SHIP_RECEIVED'
+};
+
+const openImage = async (imageUrl: string, productName: string) => {
+  const imageModal = await modalController.create({
+    component: ImageModal,
+    componentProps: { imageUrl, productName }
+  });
+  return imageModal.present();
+};
+
+const addProduct = async () => {
+  const modal = await modalController.create({
+    component: AddProductModal
+  })
+  modal.onDidDismiss().then(() => {
+    productStore.clearSearchedProducts()
+    observeProductVisibility();
+  })
+  return modal.present();
+};
+
+const observeProductVisibility = () => {
+  if (observer.value.root) {
+    observer.value.disconnect();
+  }
+
+  observer.value = new IntersectionObserver((entries: any) => {
+    entries.forEach((entry: any) => {
+      if (entry.isIntersecting) {
+        const productId = entry.target.getAttribute('data-product-id');
+        if (productId && !productQoh.value[productId]) {
+          fetchQuantityOnHand(productId);
         }
-      })
-    },
-    async updateProductCount(payload: any){
-      if(this.queryString) payload = this.queryString
-
-      if(!payload) {
-        showToast(translate("Please provide a valid barcode identifier."))
-        return;
       }
-      const result = await this.store.dispatch('shipment/updateShipmentProductCount', payload)
+    });
+  }, {
+    root: null,
+    threshold: 0.4
+  });
 
-      if(result.isProductFound) {
-        showToast(translate("Scanned successfully.", { itemName: payload }))
-        this.lastScannedId = payload
-        const scannedElement = document.getElementById(payload);
-        scannedElement && (scannedElement.scrollIntoView());
+  const products = document.querySelectorAll('.product');
+  if (products) {
+    products.forEach((product: any) => {
+      observer.value.observe(product);
+    });
+  }
+};
 
-        // Scanned product should get un-highlighted after 3s for better experience hence adding setTimeOut
-        setTimeout(() => {
-          this.lastScannedId = ''
-        }, 3000)
-      } else {
-        showToast(translate("Scanned item is not present within the shipment:", { itemName: payload }), {
-          buttons: [{
-            text: translate('Add'),
-            handler: async () => {
-              const modal = await modalController.create({
-                component: AddProductModal,
-                componentProps: { selectedSKU: payload }
-              })
+const fetchQuantityOnHand = async (productId: any) => {
+  productQoh.value[productId] = await ProductService.getInventoryAvailableByFacility(productId);
+};
 
-              modal.onDidDismiss().then(() => {
-                this.store.dispatch('product/clearSearchedProducts')
-              })
-
-              return modal.present();
-            }
-          }],
-          duration: 5000
-        })
+const completeShipment = async () => {
+  const alert = await alertController.create({
+    header: translate("Receive Shipment"),
+    message: translate("Make sure you have entered all the inventory you received. You cannot edit this information after proceeding.", { space: '<br /><br />' }),
+    buttons: [
+      {
+        text: translate("Cancel"),
+        role: 'cancel',
+      },
+      {
+        text: translate('Proceed'),
+        handler: () => {
+          receiveShipment();
+        },
       }
-      this.queryString = ''
-    },
-    async scanCode () {
-      if (useAuthStore().isEmbedded) {
-        const scanData = await openPosScanner();
-        if(scanData) {
-          this.updateProductCount(scanData);
-        } else {
-          showToast(translate("No data received from scanner"));
-        }
-        return;
-      }
-      if (!(await hasWebcamAccess())) {
-        showToast(translate("Camera access not allowed, please check permissions."));
-        return;
-      } 
-      const modal = await modalController
-        .create({
-          component: Scanner,
-        });
-        modal.onDidDismiss()
-        .then((result) => {
-          if(result.role) {
-            this.updateProductCount(result.role);
-          }
-      });
-      return modal.present();
-    },
-    searchProduct() {
-      if(!this.queryString) {
-        showToast(translate("Please provide a valid barcode identifier."))
-        return;
-      }
+    ],
+  });
+  return alert.present();
+};
 
-      const scannedElement = document.getElementById(this.queryString);
-      if(scannedElement) {
-        this.lastScannedId = this.queryString
-        scannedElement.scrollIntoView()
+const receiveShipment = async () => {
+  const eligibleItems = current.value.items.filter((item: any) => item.quantityAccepted > 0)
+  const shipmentId = current.value.shipment ? current.value.shipment.shipmentId : current.value.shipmentId
+  const isShipmentReceived = await shipmentStore.receiveShipmentJson({ items: eligibleItems, shipmentId })
+  if (isShipmentReceived) {
+    showToast(translate("Shipment received successfully", { shipmentId: shipmentId }))
+    router.push('/shipments');
+  } else {
+    showToast(translate("Failed to receive shipment"))
+    shipmentStore.setCurrent({ shipmentId: route.params.id as string })
+  }
+};
 
-        // Scanned product should get un-highlighted after 3s for better experience hence adding setTimeOut
-        setTimeout(() => {
-          this.lastScannedId = ''
-        }, 3000)
-      } else {
-        showToast(translate("Searched item is not present within the shipment:", { itemName: this.queryString }));
-      }
-      this.queryString = ''
+const isEligibleForReceivingShipment = () => {
+  return current.value.items.some((item: any) => item.quantityAccepted > 0)
+};
+
+const receiveAll = (item: any) => {
+  current.value.items.find((ele: any) => {
+    if (ele.itemSeqId == item.itemSeqId) {
+      ele.quantityAccepted = ele.quantityOrdered;
+      ele.progress = ele.quantityAccepted / ele.quantityOrdered
+      return true;
     }
-  }, 
-  setup() {
-    const store = useStore(); 
-    const router = useRouter();
-    const productIdentificationStore = useProductIdentificationStore();
-    let productIdentificationPref = computed(() => productIdentificationStore.getProductIdentificationPref)
+  })
+};
 
-    return {
-      Actions,
-      add,
-      cameraOutline,
-      checkmarkDone,
-      checkmarkDoneCircleOutline,
-      cubeOutline,
-      getFeatures,
-      hasPermission,
-      locationOutline,
-      store,
-      router,
-      translate,
-      getProductIdentificationValue,
-      productIdentificationPref,
-      warningOutline
-    };
-  },
+const updateProductCount = async (payload?: any) => {
+  if (queryString.value) payload = queryString.value
+
+  if (!payload) {
+    showToast(translate("Please provide a valid barcode identifier."))
+    return;
+  }
+  const result = await shipmentStore.updateShipmentProductCount(payload)
+
+  if (result.isProductFound) {
+    showToast(translate("Scanned successfully.", { itemName: payload }))
+    lastScannedId.value = payload
+    const scannedElement = document.getElementById(payload);
+    scannedElement && (scannedElement.scrollIntoView());
+    setTimeout(() => {
+      lastScannedId.value = ''
+    }, 3000)
+  } else {
+    showToast(translate("Scanned item is not present within the shipment:", { itemName: payload }), {
+      buttons: [{
+        text: translate('Add'),
+        handler: async () => {
+          const modal = await modalController.create({
+            component: AddProductModal,
+            componentProps: { selectedSKU: payload }
+          })
+          modal.onDidDismiss().then(() => {
+            productStore.clearSearchedProducts()
+          })
+          return modal.present();
+        }
+      }],
+      duration: 5000
+    })
+  }
+  queryString.value = ''
+};
+
+const scanCode = async () => {
+  if (authStore.isEmbedded) {
+    const scanData = await openPosScanner();
+    if (scanData) {
+      updateProductCount(scanData);
+    } else {
+      showToast(translate("No data received from scanner"));
+    }
+    return;
+  }
+  if (!(await hasWebcamAccess())) {
+    showToast(translate("Camera access not allowed, please check permissions."));
+    return;
+  }
+  const modal = await modalController.create({
+    component: Scanner,
+  });
+  modal.onDidDismiss().then((result) => {
+    if (result.role) {
+      updateProductCount(result.role);
+    }
+  });
+  return modal.present();
+};
+
+const searchProduct = () => {
+  if (!queryString.value) {
+    showToast(translate("Please provide a valid barcode identifier."))
+    return;
+  }
+  const scannedElement = document.getElementById(queryString.value);
+  if (scannedElement) {
+    lastScannedId.value = queryString.value
+    scannedElement.scrollIntoView()
+    setTimeout(() => {
+      lastScannedId.value = ''
+    }, 3000)
+  } else {
+    showToast(translate("Searched item is not present within the shipment:", { itemName: queryString.value }));
+  }
+  queryString.value = ''
+};
+
+onMounted(async () => {
+  await shipmentStore.setCurrent({ shipmentId: route.params.id as string })
+  observeProductVisibility();
+});
+
+onIonViewDidLeave(() => {
+  productQoh.value = {};
 });
 </script>
 

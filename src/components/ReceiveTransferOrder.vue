@@ -52,46 +52,31 @@
 </template>
 
 <script setup lang="ts">
-import {
-  IonButton,
-  IonButtons,
-  IonCheckbox,
-  IonContent,
-  IonFooter,
-  IonHeader,
-  IonIcon,
-  IonItem,
-  IonLabel,
-  IonList,
-  IonListHeader,
-  IonNote,
-  IonTitle,
-  IonToolbar,
-  IonThumbnail,
-  modalController
-} from '@ionic/vue';
+import { IonButton, IonButtons, IonCheckbox, IonContent, IonFooter, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonListHeader, IonNote, IonTitle, IonToolbar, IonThumbnail, modalController } from '@ionic/vue';
 import { Actions, hasPermission } from '@/authorization'
 import { arrowBackOutline } from 'ionicons/icons';
-import { computed, defineProps, onMounted, ref } from 'vue';
-import { useStore } from 'vuex'
+import { computed, onMounted, ref } from 'vue';
+import { useProductStore } from '@/store/product'
+import { useUtilStore } from '@/store/util'
 import { DxpShopifyImg, translate, getProductIdentificationValue, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { getFeatures } from '@/utils';
 
-const store = useStore()
+const props = defineProps(["closeTO", "items", "receivedUnitsFraction"])
+
+const productStore = useProductStore()
+const utilStore = useUtilStore()
 const productIdentificationStore = useProductIdentificationStore();
 
-const getProduct = computed(() => (id: any) => store.getters["product/getProduct"](id));
-const isReceivingByFulfillment = computed(() => store.getters["util/isReceivingByFulfillment"])
-const getOverReceivedQtyForItem = computed(() => (item: any): number => ((Number(item.totalReceivedQuantity) || 0) + (Number(item.quantityAccepted) || 0) - getItemQty(item)))
+const getProduct = computed(() => productStore.getProduct);
+const isReceivingByFulfillment = computed(() => utilStore.isReceivingByFulfillment)
+const getOverReceivedQtyForItem = (item: any): number => ((Number(item.totalReceivedQuantity) || 0) + (Number(item.quantityAccepted) || 0) - getItemQty(item))
 let productIdentificationPref = computed(() => productIdentificationStore.getProductIdentificationPref)
 const saveButtonLabel = computed(() => props.closeTO ? translate("Complete transfer order") : canReceiveAndClose() ? translate("Receive and complete") : translate("Save progress"))
 
-let validTOItems = ref([])
+let validTOItems = ref([]) as any
 let overReceivedTOItems: any = ref([])
 let itemsToComplete: any = ref([])
 let receivedQty: any = ref(0)
-
-const props = defineProps(["closeTO", "items", "receivedUnitsFraction"])
 
 onMounted(() => {
   validTOItems.value = props.items?.filter((item: any) => !['ITEM_REJECTED', 'ITEM_CANCELLED', 'ITEM_COMPLETED'].includes(item.statusId))

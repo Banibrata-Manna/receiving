@@ -2,83 +2,65 @@
   <ion-page>
     <ion-content data-testid="shopify-page-content">
       <div class="center-div">
-        <p>{{ $t("Installing...") }}</p>
+        <p>{{ translate("Installing...") }}</p>
       </div>
     </ion-content>
   </ion-page>
 </template>
 
-<script>
-import {
-  IonContent,
-  IonPage,
-} from "@ionic/vue";
-import { defineComponent } from "vue";
+<script setup lang="ts">
+import { IonContent, IonPage } from "@ionic/vue";
 import { Redirect } from "@shopify/app-bridge/actions";
 import createApp from "@shopify/app-bridge";
-import { showToast } from "@/utils";
-import { useRouter } from "vue-router";
+import { onMounted, onBeforeUnmount } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { translate } from '@hotwax/dxp-components';
 import emitter from "@/event-bus"
 
-export default defineComponent({
-  name: "Shopify",
-  components: {
-    IonContent,
-    IonPage,
-  },
-  data() {
-    return {
-      apiKey: process.env.VUE_APP_SHOPIFY_API_KEY,
-      shopConfigs: JSON.parse(process.env.VUE_APP_SHOPIFY_SHOP_CONFIG),
-      shopOrigin: '',
-      session: this.$route.query['session'],
-      shop: this.$route.query['shop'],
-      host: this.$route.query['host'],
-      locale: this.$route.query['locale'] || process.env.VUE_APP_I18N_LOCALE || process.env.VUE_APP_I18N_FALLBACK_LOCALE,
-    };
-  },
-  async mounted () {
-    const shop = this.shop || this.shopOrigin
-    const shopConfig = this.shopConfigs[shop];
-    const apiKey = shopConfig ? shopConfig.apiKey : '';
-    if (this.shop || this.host) {
-      this.authorise(shop, this.host, apiKey);
-      this.$router.push("/home");
-    } else {
-      this.$router.push("/error");
-    }
-  },
-  methods: {
-    authorise(shop, host, apiKey) {
-      const scopes = process.env.VUE_APP_SHOPIFY_SCOPES
-      emitter.emit("presentLoader");
-      const shopConfig = this.shopConfigs[shop];
-      if (!apiKey) apiKey = shopConfig ? shopConfig.apiKey : '';
-      const redirectUri = process.env.VUE_APP_SHOPIFY_REDIRECT_URI;
-      const permissionUrl = `https://${shop}/admin/oauth/authorize?client_id=${apiKey}&scope=${scopes}&redirect_uri=${redirectUri}`;
+const route = useRoute();
+const router = useRouter();
 
-      if (window.top == window.self) {
-        window.location.assign(permissionUrl);
-      } else {
-        const app = createApp({
-          apiKey,
-          host,
-        });
-        Redirect.create(app).dispatch(Redirect.Action.REMOTE, permissionUrl);
-      }
-      emitter.emit("dismissLoader");
-    }
-  },
-  beforeUnmount () {
-    emitter.emit("dismissLoader")
-  },
-  setup() {
-    const router = useRouter();
-    return {
-      router,
-      showToast,
-    };
-  },
+const apiKeyEnv = process.env.VUE_APP_SHOPIFY_API_KEY;
+const shopConfigs = JSON.parse(process.env.VUE_APP_SHOPIFY_SHOP_CONFIG || '{}');
+const session = route.query['session'];
+const shop = route.query['shop'] as string;
+const host = route.query['host'] as string;
+
+const authorise = (shop: string, host: string, apiKey: string) => {
+  const scopes = process.env.VUE_APP_SHOPIFY_SCOPES
+  emitter.emit("presentLoader");
+  const shopConfig = shopConfigs[shop];
+  if (!apiKey) apiKey = shopConfig ? shopConfig.apiKey : '';
+  const redirectUri = process.env.VUE_APP_SHOPIFY_REDIRECT_URI;
+  const permissionUrl = `https://${shop}/admin/oauth/authorize?client_id=${apiKey}&scope=${scopes}&redirect_uri=${redirectUri}`;
+
+  if (window.top == window.self) {
+    window.location.assign(permissionUrl);
+  } else {
+    const app = createApp({
+      apiKey,
+      host,
+    });
+    Redirect.create(app).dispatch(Redirect.Action.REMOTE, permissionUrl);
+  }
+  emitter.emit("dismissLoader");
+}
+
+onMounted(async () => {
+  const shopToAuth = shop;
+  const shopConfig = shopConfigs[shopToAuth];
+  const apiKey = shopConfig ? shopConfig.apiKey : '';
+  
+  if (shop || host) {
+    authorise(shopToAuth, host, apiKey);
+    router.push("/home");
+  } else {
+    router.push("/error");
+  }
+});
+
+onBeforeUnmount(() => {
+  emitter.emit("dismissLoader")
 });
 </script>
 
