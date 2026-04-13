@@ -21,9 +21,9 @@
           </ion-thumbnail>
           <ion-label>
             <!-- Honouring the identifications set by the user on the settings page -->
-            <h2>{{ getProductIdentificationValue(productIdentificationPref.primaryId, getProduct(product.productId)) ? getProductIdentificationValue(productIdentificationPref.primaryId, getProduct(product.productId)) : getProduct(product.productId).productName }}</h2>
-            <p>{{ getProductIdentificationValue(productIdentificationPref.secondaryId, getProduct(product.productId)) }}</p>
-            <p>{{ getFeatures(getProduct(product.productId).productFeatures) }}</p>
+            <h2>{{ commonUtil.getProductIdentificationValue(productIdentificationPref.primaryId, getProduct(product.productId)) ? commonUtil.getProductIdentificationValue(productIdentificationPref.primaryId, getProduct(product.productId)) : getProduct(product.productId).productName }}</h2>
+            <p>{{ commonUtil.getProductIdentificationValue(productIdentificationPref.secondaryId, getProduct(product.productId)) }}</p>
+            <p>{{ commonUtil.getFeatures(getProduct(product.productId).productFeatures) }}</p>
           </ion-label>
           <ion-icon v-if="isProductAvailableInShipment(product.productId)" :data-testid="`shipment-add-product-added-icon-${product.productId}`" color="success" :icon="checkmarkCircle" />
           <ion-button v-else :data-testid="`shipment-add-product-add-btn-${product.productId}`" fill="outline" @click="addToShipment(product)">{{ translate("Add to Shipment") }}</ion-button>
@@ -44,32 +44,29 @@
 import { IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList, IonSearchbar, IonThumbnail, IonTitle, IonToolbar, modalController } from '@ionic/vue';
 import { ref, computed, onMounted } from 'vue';
 import { closeOutline, checkmarkCircle } from 'ionicons/icons';
-import { useProductStore } from '@/store/product'
-import { useUserStore } from '@/store/user'
+import { useProductStore as useProduct } from '@/store/product'
 import { useShipmentStore } from '@/store/shipment';
-import { DxpShopifyImg, translate, getProductIdentificationValue, useProductIdentificationStore } from '@hotwax/dxp-components';
-import { getFeatures, showToast } from '@/utils'
-import emitter from "@/event-bus"
+import { useProductStore } from '@/store/productStore';
+import { DxpShopifyImg, translate, commonUtil, emitter } from '@common';
 
 const props = defineProps(["selectedSKU"]);
 
-const productStore = useProductStore();
-const userStore = useUserStore();
+const product = useProduct();
 const shipmentStore = useShipmentStore();
-const productIdentificationStore = useProductIdentificationStore();
+const productStore = useProductStore();
 
 const queryString = ref(props.selectedSKU ? props.selectedSKU : '');
 const isScrollingEnabled = ref(false);
 const contentRef = ref(null) as any;
 const infiniteScrollRef = ref(null) as any;
 
-const products = computed(() => productStore.getProducts);
-const getProduct = computed(() => productStore.getProduct);
-const isScrollable = computed(() => productStore.isScrollable);
-const isProductAvailableInShipment = computed(() => productStore.isProductAvailableInShipment);
-const facilityLocationsByFacilityId = computed(() => userStore.getFacilityLocationsByFacilityId);
-const currentFacility = computed(() => userStore.getCurrentFacility);
-const productIdentificationPref = computed(() => productIdentificationStore.getProductIdentificationPref);
+const products = computed(() => product.getProducts);
+const getProduct = computed(() => product.getProduct);
+const isScrollable = computed(() => product.isScrollable);
+const isProductAvailableInShipment = computed(() => product.isProductAvailableInShipment);
+const facilityLocationsByFacilityId = computed(() => productStore.getFacilityLocationsByFacilityId);
+const currentFacility = computed(() => productStore.getCurrentFacility);
+const productIdentificationPref = computed(() => productStore.getProductIdentificationPref);
 
 const closeModal = () => {
   modalController.dismiss({ dismissed: true });
@@ -96,7 +93,7 @@ const enableScrolling = () => {
 };
 
 const getProducts = async (vSize?: any, vIndex?: any) => {
-  const viewSize = vSize ? vSize : process.env.VUE_APP_VIEW_SIZE;
+  const viewSize = vSize ? vSize : import.meta.env.VITE_APP_VIEW_SIZE;
   const viewIndex = vIndex ? vIndex : 0;
   const payload = {
     viewSize,
@@ -104,10 +101,10 @@ const getProducts = async (vSize?: any, vIndex?: any) => {
     queryString: queryString.value
   }
   if (queryString.value) {
-    await productStore.findProduct(payload);
+    await product.findProduct(payload);
   }
   else {
-    showToast(translate("Enter product sku to search"))
+    commonUtil.showToast(translate("Enter product sku to search"))
   }
 };
 
@@ -117,7 +114,7 @@ const loadMoreProducts = async (event: any) => {
   }
   getProducts(
     undefined,
-    Math.ceil(products.value.length / (process.env.VUE_APP_VIEW_SIZE as any)).toString()
+    Math.ceil(products.value.length / (import.meta.env.VITE_APP_VIEW_SIZE as any)).toString()
   ).then(async () => {
     await event.target.complete();
   });

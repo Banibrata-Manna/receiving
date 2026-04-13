@@ -1,9 +1,6 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router';
-import { DateTime } from 'luxon';
-
-
 import { IonicVue } from '@ionic/vue';
 
 /* Core CSS required for Ionic components to work properly */
@@ -28,83 +25,22 @@ import './theme/variables.css';
 
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import permissionPlugin, { Actions, hasPermission } from '@/authorization';
-import permissionRules from '@/authorization/Rules';
-import permissionActions from '@/authorization/Actions';
-import { dxpComponents } from '@hotwax/dxp-components'
-import { login, logout, loader, fetchProducts } from './user-utils';
-import { addNotification, storeClientRegistrationToken } from '@/utils/firebase';
-import { fetchGoodIdentificationTypes, getConfig, initialise, setUserTimeZone, getAvailableTimeZones, getProductIdentificationPref, getUserFacilities, getUserPreference, setProductIdentificationPref, setUserPreference } from '@/adapter'
+import { createDxpI18n } from '@common';
 import localeMessages from './locales';
-import { useUserStore } from '@/store/user'
 
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);
+
+export const i18n = createDxpI18n(localeMessages)
 
 const app = createApp(App)
   .use(IonicVue, {
     mode: 'md',
     innerHTMLTemplatesEnabled: true // added this entry to enable html support inside alert, and toast
   })
-  .use(router)
   .use(pinia)
-  .use(permissionPlugin, {
-    rules: permissionRules,
-    actions: permissionActions
-  })
-  .use(dxpComponents, {
-    Actions,
-    addNotification,
-    defaultImgUrl: require("@/assets/images/defaultImage.png"),
-    login,
-    logout,
-    loader,
-    appLoginUrl: process.env.VUE_APP_LOGIN_URL as string,
-    appFirebaseConfig: JSON.parse(process.env.VUE_APP_FIREBASE_CONFIG as any),
-    appFirebaseVapidKey: process.env.VUE_APP_FIREBASE_VAPID_KEY,
-    getConfig,
-    getProductIdentificationPref,
-    initialise,
-    localeMessages,
-    setUserTimeZone,
-    setProductIdentificationPref,
-    storeClientRegistrationToken,
-    getAvailableTimeZones,
-    hasPermission,
-    fetchGoodIdentificationTypes,
-    getUserPreference,
-    getUserFacilities,
-    setUserPreference,
-    fetchProducts
-  });
-
-// Filters are removed in Vue 3 and global filter introduced https://v3.vuejs.org/guide/migration/filters.html#global-filters
-app.config.globalProperties.$filters = {
-  formatDate(value: any, inFormat?: string, outFormat?: string) {
-    if(inFormat){
-      return DateTime.fromFormat(value, inFormat).toFormat(outFormat ? outFormat : 'MM-DD-YYYY');
-    }
-    return DateTime.fromISO(value).toFormat(outFormat ? outFormat : 'MM-DD-YYYY');
-  },
-  formatUtcDate(value: any, inFormat?: any, outFormat?: string) {
-    // TODO Use Loxon instead
-    // TODO Make default format configurable and from environment variables
-    const userStore = useUserStore();
-    const userProfile = userStore.getUserProfile;
-    // TODO Fix this setDefault should set the default timezone instead of getting it everytime and setting the tz
-    return DateTime.fromISO(value, { zone: "utc" }).setZone(userProfile.userTimeZone).toFormat(outFormat ? outFormat : 'MM-dd-yyyy')
-  },
-  getFeature(featureHierarchy: any, featureKey: string) {
-    let  featureValue = ''
-    if (featureHierarchy) {
-      const feature = featureHierarchy.find((featureItem: any) => featureItem.startsWith(featureKey))
-      const featureSplit = feature ? feature.split('/') : [];
-      featureValue = featureSplit[2] ? featureSplit[2] : '';
-    }
-    return featureValue;
-  }
-}
-
+  .use(router)
+  .use(i18n)
 
 router.isReady().then(() => {
   app.mount('#app');

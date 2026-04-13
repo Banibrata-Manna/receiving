@@ -31,7 +31,7 @@
 <script setup lang="ts">
 import { IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonTitle, IonToolbar, modalController } from '@ionic/vue';
 import { closeOutline } from 'ionicons/icons';
-import { translate } from '@hotwax/dxp-components';
+import { translate } from '@common';
 
 defineProps(["items", "openItems"]);
 

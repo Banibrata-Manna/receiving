@@ -54,12 +54,13 @@ import { IonButton, IonContent, IonHeader, IonIcon, IonLabel, IonMenuButton, Ion
 import { cloudDownloadOutline, reload } from 'ionicons/icons'
 import { computed, onMounted, ref } from 'vue'
 import ReturnListItem from '@/components/ReturnListItem.vue'
-import { translate, useUserStore as useDxpUserStore } from "@hotwax/dxp-components"
+import { translate } from "@common"
+import { useProductStore } from '@/store/productStore';
 import { useRouter } from 'vue-router';
 import { useReturnStore } from '@/store/return';
 
 const router = useRouter();
-const dxpUserStore = useDxpUserStore();
+const productStore = useProductStore();
 const returnStore = useReturnStore();
 
 const queryString = ref('');
@@ -69,12 +70,12 @@ const selectedSegment = ref("open")
 
 const returns = computed(() => returnStore.getReturns);
 const returnsTotal = computed(() => returnStore.getReturnsTotal);
-const currentFacility = computed(() => dxpUserStore.getCurrentFacility);
+const currentFacility = computed(() => productStore.getCurrentFacility);
 
 const getReturns = async (vSize?: any, vIndex?: any) => {
   queryString.value ? (showErrorMessage.value = true) : (showErrorMessage.value = false);
   fetchingReturns.value = true;
-  const viewSize = vSize ? vSize : process.env.VUE_APP_VIEW_SIZE;
+  const viewSize = vSize ? vSize : import.meta.env.VITE_APP_VIEW_SIZE;
   const viewIndex = vIndex ? vIndex : 0;
   const payload = {
     "entityName": "SalesReturnShipmentView",
@@ -118,7 +119,7 @@ const getReturns = async (vSize?: any, vIndex?: any) => {
 };
 
 const loadMoreReturns = () => {
-  getReturns(process.env.VUE_APP_VIEW_SIZE, Math.ceil(returns.value.length / (process.env.VUE_APP_VIEW_SIZE as any)));
+  getReturns(import.meta.env.VITE_APP_VIEW_SIZE, Math.ceil(returns.value.length / (import.meta.env.VITE_APP_VIEW_SIZE as any)));
 };
 
 const refreshReturns = async (event?: any) => {

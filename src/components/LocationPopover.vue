@@ -11,21 +11,23 @@
 import { IonChip, IonIcon, IonSelect, IonSelectOption } from '@ionic/vue';
 import { ref, computed } from 'vue';
 import { locationOutline } from 'ionicons/icons'
-import { translate } from '@hotwax/dxp-components';
+import { translate } from '@common';
 import { useUserStore } from '@/store/user';
+import { useProductStore } from '@/store/productStore';
 import { useShipmentStore } from '@/store/shipment';
 import { useReturnStore } from '@/store/return';
 import { useTransferOrderStore } from '@/store/transferorder';
 
 const props = defineProps(['item', 'type', 'facilityId']);
 const userStore = useUserStore();
+const productStore = useProductStore();
 const selectRef = ref(null) as any;
 
-const getFacilityLocationsByFacilityId = computed(() => userStore.getFacilityLocationsByFacilityId);
+const getFacilityLocationsByFacilityId = computed(() => productStore.getFacilityLocationsByFacilityId);
 
 const setFacilityLocation = (event: CustomEvent) => {
   const locationSeqId = event.detail.value;
-  const facilityLocations = userStore.getFacilityLocationsByFacilityId(props.facilityId);
+  const facilityLocations = productStore.getFacilityLocationsByFacilityId(props.facilityId);
   if (facilityLocations) {
     const facilityLocation = facilityLocations.find((location: any) => location.locationSeqId === locationSeqId);
     if (facilityLocation) {

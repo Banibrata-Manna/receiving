@@ -1,10 +1,7 @@
 import { defineStore } from "pinia";
-import { api } from "@/adapter";
-import { hasError, showToast, getCurrentFacilityId } from "@/utils";
-import { getProductIdentificationValue, translate } from "@hotwax/dxp-components";
-import emitter from "@/event-bus";
-import { useUtilStore } from "@/store/util";
-import { useProductStore } from "@/store/product";
+import { api, commonUtil, emitter, translate } from "@common";
+import { useProductStore as useProduct } from "@/store/product";
+import { useProductStore } from "@/store/productStore";
 import { useShipmentStore } from "@/store/shipment";
 import { useUserStore } from "@/store/user";
 import { usePartyStore } from "@/store/party";
@@ -50,7 +47,7 @@ export const useOrderStore = defineStore("order", {
           data: payload,
         });
 
-        if (resp.status === 200 && !hasError(resp) && resp.data.grouped?.orderId.groups?.length > 0) {
+        if (resp.status === 200 && !commonUtil.hasError(resp) && resp.data.grouped?.orderId.groups?.length > 0) {
           const orders = resp.data.grouped.orderId;
 
           orders.groups.forEach((order: any) => {
@@ -66,26 +63,26 @@ export const useOrderStore = defineStore("order", {
           };
         } else {
           payload.json.params.start
-            ? showToast(translate("Purchase orders not found"))
+            ? commonUtil.showToast(translate("Purchase orders not found"))
             : (this.purchaseOrders = { list: [], total: 0 });
         }
       } catch (error) {
         console.error(error);
-        showToast(translate("Something went wrong"));
+        commonUtil.showToast(translate("Something went wrong"));
       }
       if (payload.json.params.start === 0) emitter.emit("dismissLoader");
       return resp;
     },
 
     async updateProductCount(payload: any) {
-      const utilStore = useUtilStore();
+      const product = useProduct();
       const productStore = useProductStore();
-      const barcodeIdentifier = utilStore.getBarcodeIdentificationPref;
-      const getProduct = productStore.getProduct;
+      const barcodeIdentifier = productStore.getBarcodeIdentifierPref;
+      const getProduct = product.getProduct;
 
       const item = this.current.items.find((item: any) => {
         const itemVal = barcodeIdentifier
-          ? getProductIdentificationValue(barcodeIdentifier, getProduct(item.productId))
+          ? commonUtil.getProductIdentificationValue(barcodeIdentifier, getProduct(item.productId))
           : item.internalName;
         return itemVal === payload;
       });
@@ -123,7 +120,7 @@ export const useOrderStore = defineStore("order", {
             },
             query: "docType:ORDER",
             filter: [
-              `orderTypeId: PURCHASE_ORDER AND orderId: ${orderId} AND orderStatusId: (ORDER_APPROVED OR ORDER_CREATED OR ORDER_COMPLETED) AND facilityId: ${getCurrentFacilityId()}`,
+              `orderTypeId: PURCHASE_ORDER AND orderId: ${orderId} AND orderStatusId: (ORDER_APPROVED OR ORDER_CREATED OR ORDER_COMPLETED) AND facilityId: ${useProductStore().getCurrentFacility.facilityId}`,
             ],
           },
         };
@@ -133,13 +130,13 @@ export const useOrderStore = defineStore("order", {
           data: payload,
         });
 
-        if (resp.status === 200 && !hasError(resp) && resp.data.grouped) {
+        if (resp.status === 200 && !commonUtil.hasError(resp) && resp.data.grouped) {
           const order = resp.data.grouped.orderId.groups[0];
           order.doclist.docs.forEach((product: any) => {
             product.quantityAccepted = 0;
           });
-          const productStore = useProductStore();
-          productStore.fetchProductInformation({ order: order.doclist.docs });
+          const product = useProduct();
+          product.fetchProductInformation({ order: order.doclist.docs });
           this.current = {
             orderId: order.groupValue,
             externalOrderId: order.doclist.docs[0]?.externalOrderId,
@@ -149,7 +146,7 @@ export const useOrderStore = defineStore("order", {
             poHistory: { items: [] },
           };
         } else {
-          showToast(translate("Something went wrong"));
+          commonUtil.showToast(translate("Something went wrong"));
           this.current = {
             orderId,
             externalOrderId: "",
@@ -160,7 +157,7 @@ export const useOrderStore = defineStore("order", {
           };
         }
       } catch (error) {
-        showToast(translate("Something went wrong"));
+        commonUtil.showToast(translate("Something went wrong"));
         this.current = {
           orderId,
           externalOrderId: "",
@@ -178,7 +175,7 @@ export const useOrderStore = defineStore("order", {
       try {
         const params = {
           orderId: payload.orderId,
-          facilityId: getCurrentFacilityId(),
+          facilityId: useProductStore().getCurrentFacility.facilityId,
         };
 
         resp = await api({
@@ -187,7 +184,7 @@ export const useOrderStore = defineStore("order", {
           data: params,
         });
 
-        if (resp.status === 200 && !hasError(resp) && resp.data.shipmentId) {
+        if (resp.status === 200 && !commonUtil.hasError(resp) && resp.data.shipmentId) {
           const shipmentId = resp.data.shipmentId;
           const shipmentStore = useShipmentStore();
 
@@ -213,11 +210,11 @@ export const useOrderStore = defineStore("order", {
             await shipmentStore.receiveShipment(poShipment).catch((err) => console.error(err));
           });
         } else {
-          showToast(translate("Something went wrong"));
+          commonUtil.showToast(translate("Something went wrong"));
         }
       } catch (error) {
         console.error(error);
-        showToast(translate("Something went wrong"));
+        commonUtil.showToast(translate("Something went wrong"));
       }
       return resp;
     },
@@ -232,7 +229,7 @@ export const useOrderStore = defineStore("order", {
 
         const params = {
           orderId: payload.orderId,
-          destinationFacilityId: getCurrentFacilityId(),
+          destinationFacilityId: useProductStore().getCurrentFacility.facilityId,
           type: "PURCHASE_SHIPMENT",
           status: "PURCH_SHIP_CREATED",
           items: payload.items,
@@ -243,9 +240,9 @@ export const useOrderStore = defineStore("order", {
           data: { payload: params },
         });
 
-        if (resp.status === 200 && !hasError(resp) && resp.data.shipmentId) {
-          const userStore = useUserStore();
-          const facilityLocations = await userStore.getFacilityLocations(getCurrentFacilityId());
+        if (resp.status === 200 && !commonUtil.hasError(resp) && resp.data.shipmentId) {
+          const productStore = useProductStore();
+          const facilityLocations = await productStore.getFacilityLocations(useProductStore().getCurrentFacility.facilityId);
           if (facilityLocations.length) {
             const locationSeqId = facilityLocations[0].locationSeqId;
             payload.items.map((item: any) => {
@@ -253,7 +250,7 @@ export const useOrderStore = defineStore("order", {
               item.quantityReceived = item.quantityAccepted ? Number(item.quantityAccepted) : 0;
             });
           } else {
-            showToast(
+            commonUtil.showToast(
               translate(
                 "Facility locations were not found corresponding to destination facility of PO. Please add facility locations to avoid receive PO failure."
               )
@@ -267,11 +264,11 @@ export const useOrderStore = defineStore("order", {
           const shipmentStore = useShipmentStore();
           return await shipmentStore.receiveShipmentJson(poShipment).catch((err: any) => console.error(err));
         } else {
-          showToast(translate("Something went wrong"));
+          commonUtil.showToast(translate("Something went wrong"));
         }
       } catch (error) {
         console.error(error);
-        showToast(translate("Something went wrong"));
+        commonUtil.showToast(translate("Something went wrong"));
       }
       return false;
     },
@@ -283,8 +280,8 @@ export const useOrderStore = defineStore("order", {
       let currentPOHistory = [] as Array<any>;
       let locationSeqId = "";
       try {
-        const userStore = useUserStore();
-        const facilityLocations = await userStore.getFacilityLocations(getCurrentFacilityId());
+        const productStore = useProductStore();
+        const facilityLocations = await productStore.getFacilityLocations(useProductStore().getCurrentFacility.facilityId);
         locationSeqId = facilityLocations.length > 0 ? facilityLocations[0].locationSeqId : "";
 
         do {
@@ -312,7 +309,7 @@ export const useOrderStore = defineStore("order", {
             method: "POST",
             data: params,
           });
-          if (resp.status === 200 && !hasError(resp) && resp.data?.docs.length > 0) {
+          if (resp.status === 200 && !commonUtil.hasError(resp) && resp.data?.docs.length > 0) {
             currentPOHistory = [...currentPOHistory, ...resp.data.docs];
           }
           viewIndex++;

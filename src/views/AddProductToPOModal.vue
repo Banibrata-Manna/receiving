@@ -21,9 +21,9 @@
           </ion-thumbnail>
           <ion-label>
             <!-- Honouring the identifications set by the user on the settings page -->
-            <h2>{{ getProductIdentificationValue(productIdentificationPref.primaryId, getProduct(product.productId)) ? getProductIdentificationValue(productIdentificationPref.primaryId, getProduct(product.productId)) : getProduct(product.productId).productName }}</h2>
-            <p>{{ getProductIdentificationValue(productIdentificationPref.secondaryId, getProduct(product.productId)) }}</p>
-            <p>{{ getFeatures(getProduct(product.productId).productFeatures) }}</p>
+            <h2>{{ commonUtil.getProductIdentificationValue(productIdentificationPref.primaryId, getProduct(product.productId)) ? commonUtil.getProductIdentificationValue(productIdentificationPref.primaryId, getProduct(product.productId)) : getProduct(product.productId).productName }}</h2>
+            <p>{{ commonUtil.getProductIdentificationValue(productIdentificationPref.secondaryId, getProduct(product.productId)) ? commonUtil.getProductIdentificationValue(productIdentificationPref.secondaryId, getProduct(product.productId)) : '' }}</p>
+            <p>{{ commonUtil.getFeatures(getProduct(product.productId).productFeatures) }}</p>
           </ion-label>
           <ion-icon v-if="isProductAvailableInOrder(product.productId)" :data-testid="`purchase-order-add-product-added-icon-${product.productId}`" color="success" :icon="checkmarkCircle" />
           <ion-button v-else :data-testid="`purchase-order-add-product-add-btn-${product.productId}`" fill="outline" @click="addToOrder(product)">{{ translate("Add to Purchase Order") }}</ion-button>
@@ -48,18 +48,18 @@
 import { IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList, IonSearchbar, IonThumbnail, IonTitle, IonToolbar, modalController } from '@ionic/vue';
 import { ref, computed, onMounted } from 'vue';
 import { closeOutline, checkmarkCircle } from 'ionicons/icons';
-import { useProductStore } from '@/store/product'
+import { useProductStore as useProduct } from '@/store/product'
 import { useOrderStore } from '@/store/order'
 import { useUserStore } from '@/store/user'
-import { DxpShopifyImg, translate, getProductIdentificationValue, useProductIdentificationStore } from '@hotwax/dxp-components';
-import { getFeatures, showToast } from '@/utils'
+import { useProductStore } from '@/store/productStore';
+import { DxpShopifyImg, translate, commonUtil } from '@common';
 
 const props = defineProps(["selectedSKU"]);
 
-const productStore = useProductStore();
+const product = useProduct();
 const orderStore = useOrderStore();
 const userStore = useUserStore();
-const productIdentificationStore = useProductIdentificationStore();
+const productStore = useProductStore();
 
 const queryString = ref(props.selectedSKU ? props.selectedSKU : '');
 const isScrollingEnabled = ref(false);
@@ -67,13 +67,13 @@ const isSearching = ref(false);
 const contentRef = ref(null) as any;
 const infiniteScrollRef = ref(null) as any;
 
-const products = computed(() => productStore.getProducts);
-const getProduct = computed(() => productStore.getProduct);
-const isScrollable = computed(() => productStore.isScrollable);
+const products = computed(() => product.getProducts);
+const getProduct = computed(() => product.getProduct);
+const isScrollable = computed(() => product.isScrollable);
 const isProductAvailableInOrder = computed(() => orderStore.isProductAvailableInOrder);
-const facilityLocationsByFacilityId = computed(() => userStore.getFacilityLocationsByFacilityId);
-const currentFacility = computed(() => userStore.getCurrentFacility);
-const productIdentificationPref = computed(() => productIdentificationStore.getProductIdentificationPref);
+const facilityLocationsByFacilityId = computed(() => productStore.getFacilityLocationsByFacilityId);
+const currentFacility = computed(() => productStore.getCurrentFacility);
+const productIdentificationPref = computed(() => productStore.getProductIdentificationPref);
 
 const closeModal = () => {
   modalController.dismiss({ dismissed: true });
@@ -86,21 +86,21 @@ const selectSearchBarText = (event: any) => {
 };
 
 const getProducts = async (vSize?: any, vIndex?: any) => {
-  const viewSize = vSize ? vSize : process.env.VUE_APP_VIEW_SIZE;
+  const viewSize = vSize ? vSize : import.meta.env.VITE_APP_VIEW_SIZE;
   const viewIndex = vIndex ? vIndex : 0;
   const payload = {
     viewSize,
     viewIndex,
     queryString: queryString.value.trim()
   }
-  await productStore.findProduct(payload);
+  await product.findProduct(payload);
 };
 
 const handleSearch = async () => {    
   if (!queryString.value.trim()){
-    showToast(translate("Enter product sku to search"))
+    commonUtil.showToast(translate("Enter product sku to search"))
     isSearching.value = false
-    await productStore.clearSearchedProducts()
+    await product.clearSearchedProducts()
     return
   }
   await getProducts()
@@ -110,7 +110,7 @@ const handleSearch = async () => {
 const handleInput = async () => {
   if (!queryString.value.trim()){
     isSearching.value = false
-    await productStore.clearSearchedProducts()
+    await product.clearSearchedProducts()
   }
 };
 
@@ -134,7 +134,7 @@ const loadMoreProducts = async (event: any) => {
   }
   getProducts(
     undefined,
-    Math.ceil(products.value.length / (process.env.VUE_APP_VIEW_SIZE as any)).toString()
+    Math.ceil(products.value.length / (import.meta.env.VITE_APP_VIEW_SIZE as any)).toString()
   ).then(async () => {
     await event.target.complete();
   });

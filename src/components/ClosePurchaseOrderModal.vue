@@ -23,9 +23,9 @@
           <DxpShopifyImg size="small" :src="getProduct(item.productId).mainImageUrl" />
         </ion-thumbnail>
         <ion-label>
-          <h2>{{ getProductIdentificationValue(productIdentificationPref.primaryId, getProduct(item.productId)) ? getProductIdentificationValue(productIdentificationPref.primaryId, getProduct(item.productId)) : getProduct(item.productId).productName }}</h2>
-          <p>{{ getProductIdentificationValue(productIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
-          <p>{{ getFeatures(getProduct(item.productId).productFeatures) }}</p>
+          <h2>{{ commonUtil.getProductIdentificationValue(productIdentificationPref.primaryId, getProduct(item.productId)) ? commonUtil.getProductIdentificationValue(productIdentificationPref.primaryId, getProduct(item.productId)) : getProduct(item.productId).productName }}</h2>
+          <p>{{ commonUtil.getProductIdentificationValue(productIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
+          <p>{{ commonUtil.getFeatures(getProduct(item.productId).productFeatures) }}</p>
         </ion-label>
         <ion-buttons>
           <ion-checkbox aria-label="itemStatus" slot="end" :data-testid="`purchase-order-close-items-select-checkbox-${item.orderItemSeqId || item.productId}`" :modelValue="isPOItemStatusPending(item) ? item.isChecked : true" :disabled="isPOItemStatusPending(item) ? false : true" />
@@ -35,7 +35,7 @@
   </ion-content>
 
   <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-    <ion-fab-button data-testid="purchase-order-close-items-save-btn" :disabled="!hasPermission(Actions.APP_SHIPMENT_UPDATE) || !isEligibleToClosePOItems()" @click="confirmSave">
+    <ion-fab-button data-testid="purchase-order-close-items-save-btn" :disabled="!userStore.hasPermission('RECEIVING_ADMIN') || !isEligibleToClosePOItems()" @click="confirmSave">
       <ion-icon :icon="saveOutline" />
     </ion-fab-button>
   </ion-fab>
@@ -43,28 +43,28 @@
 
 <script setup lang="ts">
 import { IonButton, IonButtons, IonCheckbox, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonListHeader, IonTitle, IonToolbar, IonThumbnail, alertController, modalController } from '@ionic/vue';
-import { Actions, hasPermission } from '@/authorization'
+import { useUserStore } from '@/store/user'
 import { arrowBackOutline, saveOutline } from 'ionicons/icons';
 import { computed, onMounted } from 'vue';
 import { useOrderStore } from '@/store/order';
-import { useProductStore } from '@/store/product';
-import { DxpShopifyImg, translate, getProductIdentificationValue, useProductIdentificationStore } from '@hotwax/dxp-components';
+import { useProductStore as useProduct } from '@/store/product';
+import { DxpShopifyImg, translate, commonUtil, emitter } from '@common';
+import { useProductStore } from '@/store/productStore';
 import { useRouter } from 'vue-router';
-import { copyToClipboard, getFeatures, hasError } from '@/utils';
-import emitter from '@/event-bus';
 
 const props = defineProps(['isEligibileForCreatingShipment']);
 
 const orderStore = useOrderStore();
+const product = useProduct();
 const productStore = useProductStore();
-const productIdentificationStore = useProductIdentificationStore();
 const router = useRouter();
+const userStore = useUserStore();
 
-const getProduct = computed(() => productStore.getProduct);
+const getProduct = computed(() => product.getProduct);
 const getPOItemAccepted = computed(() => orderStore.getPOItemAccepted);
 const order = computed(() => orderStore.getCurrent);
 const purchaseOrders = computed(() => orderStore.getPurchaseOrders);
-const productIdentificationPref = computed(() => productIdentificationStore.getProductIdentificationPref);
+const productIdentificationPref = computed(() => productStore.getProductIdentificationPref);
 
 const closeModal = () => {
   modalController.dismiss({ dismissed: true });
@@ -78,7 +78,7 @@ const itemStatusChangeErrorAlert = async (error: any) => {
     buttons: [{
       text: translate('Copy & Dismiss'),
       handler: async() => {
-        copyToClipboard(message)
+        commonUtil.copyToClipboard(message)
         return;
       }
     },
@@ -143,7 +143,7 @@ const updatePOItemStatus = async () => {
       statusId: "ITEM_COMPLETED"
     })
 
-    if(!hasError(resp)) {
+    if(!commonUtil.hasError(resp)) {
       completedItems.push(lastItem.orderItemSeqId)
     } else {
       throw resp.data;

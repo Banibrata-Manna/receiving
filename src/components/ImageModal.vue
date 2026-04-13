@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import { IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonTitle, IonToolbar, modalController } from '@ionic/vue';
 import { closeOutline } from 'ionicons/icons';
-import { DxpShopifyImg } from '@hotwax/dxp-components';
+import { DxpShopifyImg } from '@common';
 
 defineProps(['imageUrl', 'productName']);
 

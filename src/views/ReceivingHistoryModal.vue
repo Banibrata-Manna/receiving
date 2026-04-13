@@ -40,10 +40,11 @@
 import { IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonThumbnail, IonTitle, IonToolbar, modalController } from '@ionic/vue';
 import { computed } from 'vue';
 import { closeOutline } from 'ionicons/icons';
-import { DxpShopifyImg, translate, getProductIdentificationValue, useProductIdentificationStore } from '@hotwax/dxp-components';
+import { DxpShopifyImg, translate, commonUtil } from '@common';
+import { useProductStore as useProduct } from '@/store/product';
+import { useProductStore } from '@/store/productStore';
 import { useOrderStore } from '@/store/order';
 import { useTransferOrderStore } from '@/store/transferorder';
-import { useProductStore } from '@/store/product';
 import { DateTime } from 'luxon';
 
 const props = defineProps({
@@ -58,13 +59,13 @@ const props = defineProps({
 
 const orderStore = useOrderStore();
 const transferOrderStore = useTransferOrderStore();
+const product = useProduct();
 const productStore = useProductStore();
-const productIdentificationStore = useProductIdentificationStore();
 
 const poHistory = computed(() => orderStore.getPOHistory);
 const toHistory = computed(() => transferOrderStore.getTOHistory);
-const getProduct = computed(() => productStore.getProduct);
-const productIdentificationPref = computed(() => productIdentificationStore.getProductIdentificationPref);
+const getProduct = computed(() => product.getProduct);
+const productIdentificationPref = computed(() => productStore.getProductIdentificationPref);
 
 const items = computed(() => {
   const history = props.orderType === 'purchaseOrder' ? poHistory.value : toHistory.value;
@@ -83,8 +84,8 @@ const emptyStateMessage = computed(() => {
   if (props.productId) {
     const product = getProduct.value(props.productId);
     const identifier =
-      getProductIdentificationValue(productIdentificationPref.value.primaryId, product) ||
-      getProductIdentificationValue(productIdentificationPref.value.secondaryId, product) ||
+      commonUtil.getProductIdentificationValue(productIdentificationPref.value.primaryId, product) ||
+      commonUtil.getProductIdentificationValue(productIdentificationPref.value.secondaryId, product) ||
       product?.productName ||
       product?.productId;
     return translate("No receipts have been created against yet", { lineBreak: '<br />', productIdentifier: identifier });

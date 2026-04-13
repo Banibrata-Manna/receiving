@@ -1,12 +1,9 @@
 import { defineStore } from "pinia";
-import { api } from "@/adapter";
-import { hasError, showToast, getCurrentFacilityId } from "@/utils";
-import { getProductIdentificationValue, translate } from "@hotwax/dxp-components";
-import emitter from "@/event-bus";
+import { client as api, commonUtil, emitter, translate } from "@common";
 import { DateTime } from "luxon";
+import { useProductStore as useProduct } from "@/store/product";
+import { useProductStore } from "@/store/productStore";
 import { useUtilStore } from "@/store/util";
-import { useUserStore } from "@/store/user";
-import { useProductStore } from "@/store/product";
 
 export const useShipmentStore = defineStore("shipment", {
   state: () => ({
@@ -32,7 +29,7 @@ export const useShipmentStore = defineStore("shipment", {
           data: payload,
           cache: true,
         });
-        if (resp.status === 200 && resp.data.docs?.length > 0 && !hasError(resp)) {
+        if (resp.status === 200 && resp.data.docs?.length > 0 && !commonUtil.hasError(resp)) {
           let shipments = resp.data.docs;
           const statusIds = [...new Set(shipments.map((shipment: any) => shipment.statusId))] as Array<string>;
           const utilStore = useUtilStore();
@@ -52,25 +49,25 @@ export const useShipmentStore = defineStore("shipment", {
           if (payload.viewIndex && payload.viewIndex > 0) shipments = this.shipments.list.concat(shipments);
           this.shipments = { list: shipments, total: resp.data.count };
         } else {
-          payload.viewIndex ? showToast(translate("Shipments not found")) : (this.shipments = { list: [], total: 0 });
+          payload.viewIndex ? commonUtil.showToast(translate("Shipments not found")) : (this.shipments = { list: [], total: 0 });
         }
       } catch (error) {
         console.error(error);
-        showToast(translate("Something went wrong"));
+        commonUtil.showToast(translate("Something went wrong"));
       }
       if (payload.viewIndex === 0) emitter.emit("dismissLoader");
       return resp;
     },
 
     async updateShipmentProductCount(payload: any) {
-      const utilStore = useUtilStore();
       const productStore = useProductStore();
-      const barcodeIdentifier = utilStore.getBarcodeIdentificationPref;
-      const getProduct = productStore.getProduct;
+      const product = useProduct();
+      const barcodeIdentifier = productStore.getBarcodeIdentifierPref;
+      const getProduct = product.getProduct;
 
       const item = this.current.items.find((item: any) => {
         const itemVal = barcodeIdentifier
-          ? getProductIdentificationValue(barcodeIdentifier, getProduct(item.productId))
+          ? commonUtil.getProductIdentificationValue(barcodeIdentifier, getProduct(item.productId))
           : item.internalName;
         return itemVal === payload && item.quantityReceived === 0;
       });
@@ -91,15 +88,15 @@ export const useShipmentStore = defineStore("shipment", {
           data: payload,
           method: "post",
         });
-        if (resp.status === 200 && resp.data.items && !hasError(resp)) {
+        if (resp.status === 200 && resp.data.items && !commonUtil.hasError(resp)) {
           const shipmentDetail = resp.data;
           const shipmentAttributes = await this.fetchShipmentAttributes([shipmentDetail.shipmentId]);
           const orderShipmentData = await this.fetchOrderShipments(shipmentDetail.shipmentId);
           shipmentDetail.externalOrderId = shipmentAttributes?.[shipmentDetail.shipmentId]?.["EXTERNAL_ORDER_ID"];
           shipmentDetail.externalOrderName = shipmentAttributes?.[shipmentDetail.shipmentId]?.["EXTERNAL_ORDER_NAME"];
 
-          const userStore = useUserStore();
-          const facilityLocations = await userStore.getFacilityLocations(getCurrentFacilityId());
+          const productStore = useProductStore();
+          const facilityLocations = await productStore.getFacilityLocations(productStore.getCurrentFacility.facilityId);
           if (facilityLocations.length) {
             const locationSeqId = facilityLocations[0].locationSeqId;
             resp.data.items.map((item: any) => {
@@ -110,7 +107,7 @@ export const useShipmentStore = defineStore("shipment", {
               item.orderItemSeqId = orderShipment?.orderItemSeqId;
             });
           } else {
-            showToast(
+            commonUtil.showToast(
               translate(
                 "Facility locations were not found corresponding to destination facility of return shipment. Please add facility locations to avoid receive return shipment failure."
               )
@@ -123,17 +120,17 @@ export const useShipmentStore = defineStore("shipment", {
           });
           productIds = [...productIds];
           if (productIds.length) {
-            const productStore = useProductStore();
-            productStore.fetchProducts({ productIds });
+            const product = useProduct();
+            product.fetchProducts({ productIds });
           }
           return resp.data;
         } else {
-          showToast(translate("Something went wrong"));
+          commonUtil.showToast(translate("Something went wrong"));
           console.error("error", resp.data._ERROR_MESSAGE_);
           return Promise.reject(new Error(resp.data._ERROR_MESSAGE_));
         }
       } catch (err: any) {
-        showToast(translate("Something went wrong"));
+        commonUtil.showToast(translate("Something went wrong"));
         console.error("error", err);
         return Promise.reject(new Error(err));
       }
@@ -141,6 +138,7 @@ export const useShipmentStore = defineStore("shipment", {
 
     async receiveShipmentItem(payload: any) {
       let areAllSuccess = true;
+      const productStore = useProductStore();
 
       for (const item of payload.items) {
         if (payload.isMultiReceivingEnabled || item.quantityReceived === 0) {
@@ -152,7 +150,7 @@ export const useShipmentStore = defineStore("shipment", {
 
           const params = {
             shipmentId: payload.shipmentId,
-            facilityId: getCurrentFacilityId(),
+            facilityId: productStore.getCurrentFacility.facilityId,
             shipmentItemSeqId: item.itemSeqId,
             productId: item.productId,
             quantityAccepted: item.quantityAccepted,
@@ -168,7 +166,7 @@ export const useShipmentStore = defineStore("shipment", {
               method: "post",
               data: params,
             });
-            if (hasError(resp)) {
+            if (commonUtil.hasError(resp)) {
               throw resp.data;
             }
           } catch (error: any) {
@@ -182,6 +180,7 @@ export const useShipmentStore = defineStore("shipment", {
 
     async receiveShipmentJson(payload: any) {
       emitter.emit("presentLoader");
+      const productStore = useProductStore();
       const fileName = `ReceiveShipment_${payload.shipmentId}_${DateTime.now().toLocaleString(
         DateTime.DATETIME_MED_WITH_SECONDS
       )}.json`;
@@ -194,7 +193,7 @@ export const useShipmentStore = defineStore("shipment", {
       const uploadData = payload.items.map((item: any) => {
         return {
           shipmentId: payload.shipmentId,
-          facilityId: getCurrentFacilityId(),
+          facilityId: productStore.getCurrentFacility.facilityId,
           shipmentItemSeqId: item.itemSeqId,
           productId: item.productId,
           quantityAccepted: item.quantityAccepted,
@@ -216,7 +215,7 @@ export const useShipmentStore = defineStore("shipment", {
           method: "post",
           ...uploadPayload,
         });
-        if (resp.status == 200 && !hasError(resp)) {
+        if (resp.status == 200 && !commonUtil.hasError(resp)) {
           const uploadFileContentId = resp.data.uploadFileContentId;
           if (uploadFileContentId) {
             resp = await api({
@@ -234,7 +233,7 @@ export const useShipmentStore = defineStore("shipment", {
                 viewSize: 1,
               },
             });
-            if (!hasError(resp) && resp.data.docs.length) {
+            if (!commonUtil.hasError(resp) && resp.data.docs.length) {
               resp = await api({
                 url: "receiveShipment",
                 method: "post",
@@ -243,7 +242,7 @@ export const useShipmentStore = defineStore("shipment", {
                   statusId: "PURCH_SHIP_RECEIVED",
                 },
               });
-              if (resp.status == 200 && !hasError(resp)) {
+              if (resp.status == 200 && !commonUtil.hasError(resp)) {
                 return true;
               } else {
                 throw resp.data;
@@ -256,7 +255,7 @@ export const useShipmentStore = defineStore("shipment", {
           throw resp.data;
         }
       } catch (err) {
-        showToast(translate("Something went wrong, please try again"));
+        commonUtil.showToast(translate("Something went wrong, please try again"));
       }
       emitter.emit("dismissLoader");
       return false;
@@ -275,8 +274,8 @@ export const useShipmentStore = defineStore("shipment", {
             },
           });
 
-          if (resp.status == 200 && !hasError(resp)) {
-            showToast(translate("Shipment received successfully", { shipmentId: payload.shipmentId }));
+          if (resp.status == 200 && !commonUtil.hasError(resp)) {
+            commonUtil.showToast(translate("Shipment received successfully", { shipmentId: payload.shipmentId }));
             return true;
           } else {
             throw resp.data;
@@ -309,7 +308,7 @@ export const useShipmentStore = defineStore("shipment", {
         method: "post",
         data: params,
       });
-      if (resp.status == 200 && !hasError(resp) && resp.data.shipmentId && resp.data.shipmentItemSeqId) {
+      if (resp.status == 200 && !commonUtil.hasError(resp) && resp.data.shipmentId && resp.data.shipmentItemSeqId) {
         this.updateProductCount({ shipmentId: resp.data.shipmentId });
         if (!payload.shipmentId) {
           this.current.items.push({
@@ -319,7 +318,7 @@ export const useShipmentStore = defineStore("shipment", {
         }
         return resp;
       } else {
-        showToast(translate("Something went wrong"));
+        commonUtil.showToast(translate("Something went wrong"));
         console.error("error", resp._ERROR_MESSAGE_);
         return Promise.reject(new Error(resp.data._ERROR_MESSAGE_));
       }
@@ -386,7 +385,7 @@ export const useShipmentStore = defineStore("shipment", {
           params,
         });
 
-        if (!hasError(resp)) {
+        if (!commonUtil.hasError(resp)) {
           shipmentTrackingCodes = resp?.data.docs.reduce(
             (codes: any, item: any) => ((codes[item.shipmentId] = item.trackingIdNumber), codes),
             {}
@@ -420,7 +419,7 @@ export const useShipmentStore = defineStore("shipment", {
           params,
         });
 
-        if (!hasError(resp)) {
+        if (!commonUtil.hasError(resp)) {
           resp?.data.docs.forEach((attribute: any) => {
             const { shipmentId, attrName, attrValue } = attribute;
             if (!shipmentAttributes[shipmentId]) {
@@ -454,7 +453,7 @@ export const useShipmentStore = defineStore("shipment", {
           params,
         });
 
-        if (!hasError(resp)) {
+        if (!commonUtil.hasError(resp)) {
           orderShipmentData = resp?.data?.docs.reduce((shipmentData: any, shipment: any) => {
             const key = `${shipment.shipmentId}-${shipment.shipmentItemSeqId}`;
             shipmentData[key] = shipment;

@@ -14,24 +14,23 @@ import { Redirect } from "@shopify/app-bridge/actions";
 import createApp from "@shopify/app-bridge";
 import { onMounted, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { translate } from '@hotwax/dxp-components';
-import emitter from "@/event-bus"
+import { translate, emitter } from '@common';
 
 const route = useRoute();
 const router = useRouter();
 
-const apiKeyEnv = process.env.VUE_APP_SHOPIFY_API_KEY;
-const shopConfigs = JSON.parse(process.env.VUE_APP_SHOPIFY_SHOP_CONFIG || '{}');
+const apiKeyEnv = import.meta.env.VITE_APP_SHOPIFY_API_KEY;
+const shopConfigs = JSON.parse(import.meta.env.VITE_APP_SHOPIFY_SHOP_CONFIG || '{}');
 const session = route.query['session'];
 const shop = route.query['shop'] as string;
 const host = route.query['host'] as string;
 
 const authorise = (shop: string, host: string, apiKey: string) => {
-  const scopes = process.env.VUE_APP_SHOPIFY_SCOPES
+  const scopes = import.meta.env.VITE_APP_SHOPIFY_SCOPES
   emitter.emit("presentLoader");
   const shopConfig = shopConfigs[shop];
   if (!apiKey) apiKey = shopConfig ? shopConfig.apiKey : '';
-  const redirectUri = process.env.VUE_APP_SHOPIFY_REDIRECT_URI;
+  const redirectUri = import.meta.env.VITE_APP_SHOPIFY_REDIRECT_URI;
   const permissionUrl = `https://${shop}/admin/oauth/authorize?client_id=${apiKey}&scope=${scopes}&redirect_uri=${redirectUri}`;
 
   if (window.top == window.self) {

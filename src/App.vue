@@ -1,37 +1,75 @@
 <template>
   <ion-app>
-    <IonSplitPane content-id="main-content" when="lg">
-      <Menu />
+    <ion-split-pane content-id="main-content" when="lg">
+      <ion-menu content-id="main-content" type="overlay" :disabled="!isAuthenticated || (router.currentRoute.value.name as string) === 'Login'">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>{{ currentFacility.facilityName }}</ion-title>
+          </ion-toolbar>
+        </ion-header>
+
+        <ion-content>
+          <ion-list id="receiving-list">
+            <ion-menu-toggle :auto-hide="false" v-for="(p, i) in menuItems" :key="i">
+              <ion-item button router-direction="root" :router-link="p.url" class="hydrated" :class="{ selected: selectedIndex === i }">
+                <ion-icon slot="start" :ios="p.icon" :md="p.icon" />
+                <ion-label>{{ translate(p.title) }}</ion-label>
+              </ion-item>
+            </ion-menu-toggle>
+          </ion-list>
+        </ion-content>
+      </ion-menu>
       <ion-router-outlet id="main-content"></ion-router-outlet>
-    </IonSplitPane>
+    </ion-split-pane>
   </ion-app>
 </template>
 
 <script setup lang="ts">
-import { IonApp, IonRouterOutlet, IonSplitPane, loadingController } from '@ionic/vue';
-import Menu from '@/components/Menu.vue';
+import { IonApp, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonMenu, IonMenuToggle, IonRouterOutlet, IonSplitPane, IonTitle, IonToolbar, loadingController } from '@ionic/vue';
 import { ref, computed, onBeforeMount, onMounted, onUnmounted } from 'vue';
-import emitter from "@/event-bus"
+import { useRouter } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 import { Settings } from 'luxon';
-import { initialise, resetConfig } from '@/adapter'
-import { initialiseFirebaseApp, translate , useAuthStore, useProductIdentificationStore } from "@hotwax/dxp-components"
-import { addNotification, storeClientRegistrationToken } from '@/utils/firebase';
+import { translate, emitter, useNotificationStore, logger } from "@common";
+import { firebaseUtil } from '@/utils/firebaseUtil';
 import { useUserStore } from '@/store/user';
+import { useProductStore } from '@/store/productStore';
 
 const userStore = useUserStore();
-const authStore = useAuthStore();
-const productIdentificationStore = useProductIdentificationStore();
+const productStore = useProductStore();
+const router = useRouter();
+const { isAuthenticated } = useAuth();
+
+const currentFacility = computed(() => productStore.getCurrentFacility);
+
+const menuItems = computed(() => {
+  return router.getRoutes()
+    .filter(route => route.meta && route.meta.menuIndex)
+    .filter(route => {
+      if(userStore.hasPermission("FULFILLMENT_LEGACY_APP_VIEW") && userStore.hasPermission("FULFILLMENT_APP_VIEW") && route.meta.title === "Transfer Orders") {
+        return false;
+      } else if(!userStore.hasPermission("FULFILLMENT_LEGACY_APP_VIEW") && !userStore.hasPermission("FULFILLMENT_APP_VIEW") && route.meta.title === "Shipments") {
+        return true;
+      }
+      return !route.meta.permissionId || userStore.hasPermission(route.meta.permissionId as string);
+    })
+    .sort((a, b) => (a.meta!.menuIndex as number) - (b.meta!.menuIndex as number))
+    .map(route => ({
+      title: route.meta!.title as string,
+      url: route.path,
+      icon: route.meta!.icon as string,
+      childRoutes: route.meta!.childRoutes as string[]
+    }));
+});
+
+const selectedIndex = computed(() => {
+  const path = router.currentRoute.value.path;
+  return menuItems.value.findIndex((item) => item.url === path || item.childRoutes?.includes(path) || item.childRoutes?.some((route: any) => path.includes(route)));
+});
 
 const loader = ref(null as any);
-const maxAge = process.env.VUE_APP_CACHE_MAX_AGE ? parseInt(process.env.VUE_APP_CACHE_MAX_AGE) : 0;
-const appFirebaseConfig = process.env.VUE_APP_FIREBASE_CONFIG ? JSON.parse(process.env.VUE_APP_FIREBASE_CONFIG) : undefined;
-const appFirebaseVapidKey = process.env.VUE_APP_FIREBASE_VAPID_KEY || '';
-
-const currentEComStore = computed(() => userStore.getCurrentEComStore);
 const userProfile = computed(() => userStore.getUserProfile);
-const userToken = computed(() => userStore.getUserToken);
-const instanceUrl = computed(() => userStore.getInstanceUrl);
-const allNotificationPrefs = computed(() => userStore.getAllNotificationPrefs);
+const allNotificationPrefs = computed(() => useNotificationStore().allNotificationPrefs);
 
 const presentLoader = async (options = { message: '', backdropDismiss: true }) => {
   // When having a custom message remove already existing loader
@@ -65,52 +103,20 @@ const dismissLoader = () => {
   }
 };
 
-const unauthorized = async () => {
-  const isEmbedded = authStore.isEmbedded;
-  const shop = authStore.shop;
-  const host = authStore.host;
-  // Mark the user as unauthorised, this will help in not making the logout api call in actions
-  await userStore.logout({ isUserUnauthorised: true });
-  const redirectUrl = window.location.origin + '/login';
-  window.location.href = isEmbedded ? `${redirectUrl}?embedded=1&shop=${shop}&host=${host}` : `${process.env.VUE_APP_LOGIN_URL}?redirectUrl=${redirectUrl}`;
-};
-
-// created logic
-initialise({
-  token: userToken.value,
-  instanceUrl: instanceUrl.value,
-  cacheMaxAge: maxAge,
-  events: {
-    unauthorised: unauthorized,
-    responseError: () => {
-      setTimeout(() => dismissLoader(), 100);
-    },
-    queueTask: (payload: any) => {
-      emitter.emit("queueTask", payload);
-    }
-  }
-})
-
 onBeforeMount(() => {
-  emitter.on('presentLoader', presentLoader);
+  emitter.on('presentLoader', (options: any) => {
+    presentLoader(options);
+  });
   emitter.on('dismissLoader', dismissLoader);
 });
 
 onMounted(async () => {
-  if (userToken.value) {
-    // Get product identification from api using dxp-component
-    await productIdentificationStore.getIdentificationPref(currentEComStore.value?.productStoreId)
-      .catch((error) => console.error(error));
+  const currentEComStore: any = productStore.getCurrentEComStore;
+  if (isAuthenticated.value && currentEComStore?.productStoreId) {
+    await productStore.fetchProductStoreSettings(currentEComStore.productStoreId).catch((error) => logger.error(error));
 
-    // check if firebase configurations are there.
-    if (appFirebaseConfig && appFirebaseConfig.apiKey && allNotificationPrefs.value?.length) {
-      // initialising and connecting firebase app for notification support
-      await initialiseFirebaseApp(
-        appFirebaseConfig,
-        appFirebaseVapidKey,
-        storeClientRegistrationToken,
-        addNotification,
-      )
+    if (allNotificationPrefs.value?.length) {
+      await firebaseUtil.initialiseFirebaseMessaging();
     }
   }
 
@@ -122,8 +128,18 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  emitter.off('presentLoader', presentLoader);
+  emitter.off('presentLoader', (options: any) => {
+    presentLoader(options);
+  });
   emitter.off('dismissLoader', dismissLoader);
-  resetConfig()
 });
 </script>
+
+<style scoped>
+ion-item.selected ion-icon {
+  color: var(--ion-color-secondary);
+}
+ion-item.selected {
+  --color: var(--ion-color-secondary);
+}
+</style>

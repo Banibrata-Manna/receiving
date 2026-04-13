@@ -59,11 +59,11 @@ import { ref, computed } from 'vue';
 import { useTransferOrderStore } from '@/store/transferorder';
 import { useUserStore } from '@/store/user';
 import TransferOrderItem from '@/components/TransferOrderItem.vue'
-import { translate } from "@hotwax/dxp-components"
-import emitter from '@/event-bus';
+import { translate, commonUtil, emitter } from "@common"
+import { useProductStore } from '@/store/productStore';
 
 const transferOrderStore = useTransferOrderStore();
-const userStore = useUserStore();
+const productStore = useProductStore();
 
 const queryString = ref('');
 const fetchingOrders = ref(false);
@@ -71,12 +71,12 @@ const showErrorMessage = ref(false);
 const selectedSegment = ref("open");
 
 const orders = computed(() => transferOrderStore.getTransferOrders);
-const currentFacility: any = computed(() => userStore.getCurrentFacility);
+const currentFacility: any = computed(() => productStore.getCurrentFacility);
 
 const getTransferOrders = async (vSize?: any, vIndex?: any) => {
   queryString.value ? showErrorMessage.value = true : showErrorMessage.value = false;
   fetchingOrders.value = true;
-  const limit = vSize ? vSize : process.env.VUE_APP_VIEW_SIZE;
+  const limit = vSize ? vSize : import.meta.env.VITE_APP_VIEW_SIZE;
   const pageIndex = vIndex ? vIndex : 0;
 
   let orderStatusId;
@@ -104,7 +104,7 @@ const getTransferOrders = async (vSize?: any, vIndex?: any) => {
 };
 
 const loadMoreOrders = async () => {
-  const limit = process.env.VUE_APP_VIEW_SIZE;
+  const limit = import.meta.env.VITE_APP_VIEW_SIZE;
   const pageIndex = Math.ceil(orders.value.list.length / limit);
   await getTransferOrders(limit, pageIndex);
 };

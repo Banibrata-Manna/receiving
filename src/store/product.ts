@@ -1,8 +1,7 @@
 import { defineStore } from "pinia";
-import { api, searchProducts, hasError } from "@/adapter";
-import emitter from "@/event-bus";
+import { api, commonUtil, emitter, useSolrSearch } from "@common";
 import { useShipmentStore } from "@/store/shipment";
-import { getCurrentFacilityId } from "@/utils";
+import { useProductStore as useFacilityStore } from "@/store/productStore";
 
 export const useProductStore = defineStore("product", {
   state: () => ({
@@ -28,7 +27,7 @@ export const useProductStore = defineStore("product", {
       const viewSize = productIdFilter.length;
       if (!viewSize) return;
 
-      const resp = await searchProducts({
+      const resp = await useSolrSearch().searchProducts({
         filters: {
           productId: {
             value: productIdFilter,
@@ -48,7 +47,7 @@ export const useProductStore = defineStore("product", {
       let resp;
       if (payload.viewIndex === 0) emitter.emit("presentLoader");
       try {
-        resp = await searchProducts({
+        resp = await useSolrSearch().searchProducts({
           keyword: payload.queryString,
           viewSize: payload.viewSize,
           viewIndex: payload.viewIndex,
@@ -76,7 +75,7 @@ export const useProductStore = defineStore("product", {
       let productQoh = "";
       const payload = {
         productId,
-        facilityId: getCurrentFacilityId(),
+        facilityId: useFacilityStore().getCurrentFacility.facilityId,
       };
 
       try {
@@ -86,7 +85,7 @@ export const useProductStore = defineStore("product", {
           data: payload,
         });
 
-        if (!hasError(resp)) {
+        if (!commonUtil.hasError(resp)) {
           productQoh = resp?.data.quantityOnHandTotal;
         } else {
           throw resp.data;

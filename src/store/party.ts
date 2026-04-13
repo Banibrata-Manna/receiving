@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
-import { api } from "@/adapter";
-import { hasError } from "@/utils";
+import { api, commonUtil } from "@common";
 
 export const usePartyStore = defineStore("party", {
   state: () => ({
@@ -30,7 +29,7 @@ export const usePartyStore = defineStore("party", {
           method: "post",
           data: params,
         });
-        if (resp.status == 200 && !hasError(resp) && resp.data.count > 0) {
+        if (resp.status == 200 && !commonUtil.hasError(resp) && resp.data.count > 0) {
           const receiversDetails = resp.data.docs;
 
           receiversDetails.forEach((receiverDetails: any) => {

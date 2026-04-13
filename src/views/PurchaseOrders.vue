@@ -53,12 +53,13 @@ import { IonButton, IonContent, IonHeader, IonIcon, IonLabel, IonMenuButton, Ion
 import { cloudDownloadOutline, reload } from 'ionicons/icons'
 import { computed, ref } from 'vue';
 import PurchaseOrderItem from '@/components/PurchaseOrderItem.vue'
-import { translate, useUserStore as useDxpUserStore } from "@hotwax/dxp-components"
+import { translate } from "@common"
+import { useProductStore } from '@/store/productStore';
 import { useRouter } from 'vue-router';
 import { useOrderStore } from '@/store/order';
 
 const router = useRouter();
-const dxpUserStore = useDxpUserStore();
+const productStore = useProductStore();
 const orderStore = useOrderStore();
 
 const queryString = ref('');
@@ -68,12 +69,12 @@ const selectedSegment = ref("open");
 
 const orders = computed(() => orderStore.getPurchaseOrders);
 const ordersTotal = computed(() => orderStore.getPurchaseOrdersTotal);
-const currentFacility = computed(() => dxpUserStore.getCurrentFacility);
+const currentFacility = computed(() => productStore.getCurrentFacility);
 
 const getPurchaseOrders = async (vSize?: any, vIndex?: any) => {
   queryString.value ? (showErrorMessage.value = true) : (showErrorMessage.value = false);
   fetchingOrders.value = true;
-  const viewSize = vSize ? vSize : process.env.VUE_APP_VIEW_SIZE;
+  const viewSize = vSize ? vSize : import.meta.env.VITE_APP_VIEW_SIZE;
   const viewIndex = vIndex ? vIndex : 0;
   const payload = {
     "json": {
@@ -102,7 +103,7 @@ const getPurchaseOrders = async (vSize?: any, vIndex?: any) => {
 const loadMoreOrders = async () => {
   getPurchaseOrders(
     undefined,
-    Math.ceil(orders.value.length / (process.env.VUE_APP_VIEW_SIZE as any))
+    Math.ceil(orders.value.length / (import.meta.env.VITE_APP_VIEW_SIZE as any))
   );
 };
 
