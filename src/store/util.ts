@@ -24,6 +24,7 @@ export const useUtilStore = defineStore("util", {
         const resp: any = await api({
           url: "/performFind",
           method: "post",
+          baseURL: commonUtil.getOmsURL(),
           data: {
             entityName: "StatusItem",
             noConditionFind: "Y",
@@ -54,6 +55,7 @@ export const useUtilStore = defineStore("util", {
       return api({
         url: "performFind",
         method: "post",
+        baseURL: commonUtil.getOmsURL(),
         headers: {
           Authorization: "Bearer " + token,
           "Content-Type": "application/json",

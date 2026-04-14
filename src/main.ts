@@ -38,9 +38,9 @@ const app = createApp(App)
     mode: 'md',
     innerHTMLTemplatesEnabled: true // added this entry to enable html support inside alert, and toast
   })
+  .use(i18n)
   .use(pinia)
   .use(router)
-  .use(i18n)
 
 router.isReady().then(() => {
   app.mount('#app');

@@ -75,7 +75,7 @@ const currentFacility = computed(() => productStore.getCurrentFacility);
 const getReturns = async (vSize?: any, vIndex?: any) => {
   queryString.value ? (showErrorMessage.value = true) : (showErrorMessage.value = false);
   fetchingReturns.value = true;
-  const viewSize = vSize ? vSize : import.meta.env.VITE_APP_VIEW_SIZE;
+  const viewSize = vSize ? vSize : import.meta.env.VITE_VIEW_SIZE;
   const viewIndex = vIndex ? vIndex : 0;
   const payload = {
     "entityName": "SalesReturnShipmentView",
@@ -119,7 +119,7 @@ const getReturns = async (vSize?: any, vIndex?: any) => {
 };
 
 const loadMoreReturns = () => {
-  getReturns(import.meta.env.VITE_APP_VIEW_SIZE, Math.ceil(returns.value.length / (import.meta.env.VITE_APP_VIEW_SIZE as any)));
+  getReturns(import.meta.env.VITE_VIEW_SIZE, Math.ceil(returns.value.length / (import.meta.env.VITE_VIEW_SIZE as any)));
 };
 
 const refreshReturns = async (event?: any) => {

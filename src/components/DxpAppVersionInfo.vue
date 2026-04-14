@@ -29,7 +29,7 @@ const refreshApp = () => {
   pwaState.value.registration.waiting.postMessage({ type: 'SKIP_WAITING' })
 }
 
-const appInfo = (import.meta.env.VITE_APP_VERSION_INFO ? JSON.parse(import.meta.env.VITE_APP_VERSION_INFO as string) : {}) as any;
+const appInfo = (import.meta.env.VITE_VERSION_INFO ? JSON.parse(import.meta.env.VITE_VERSION_INFO as string) : {}) as any;
 const appVersion = appInfo.branch ? (appInfo.branch + "-" + appInfo.revision) : appInfo.tag ? appInfo.tag : "";
 const getDateTime = (time: any) => time ? DateTime.fromMillis(time).setZone(userProfile.value?.timeZone).toLocaleString(DateTime.DATETIME_MED) : "";
 </script>

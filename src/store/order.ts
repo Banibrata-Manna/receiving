@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { api, commonUtil, emitter, translate } from "@common";
+import { api, commonUtil, emitter, translate, useSolrSearch } from "@common";
 import { useProductStore as useProduct } from "@/store/product";
 import { useProductStore } from "@/store/productStore";
 import { useShipmentStore } from "@/store/shipment";
@@ -41,11 +41,7 @@ export const useOrderStore = defineStore("order", {
       if (payload.json.params.start === 0) emitter.emit("presentLoader");
       let resp: any;
       try {
-        resp = await api({
-          url: "/solr-query",
-          method: "POST",
-          data: payload,
-        });
+        resp = await useSolrSearch().runSolrQuery(payload)
 
         if (resp.status === 200 && !commonUtil.hasError(resp) && resp.data.grouped?.orderId.groups?.length > 0) {
           const orders = resp.data.grouped.orderId;
@@ -124,11 +120,7 @@ export const useOrderStore = defineStore("order", {
             ],
           },
         };
-        resp = await api({
-          url: "/solr-query",
-          method: "POST",
-          data: payload,
-        });
+        resp = await useSolrSearch().runSolrQuery(payload)
 
         if (resp.status === 200 && !commonUtil.hasError(resp) && resp.data.grouped) {
           const order = resp.data.grouped.orderId.groups[0];
@@ -181,6 +173,7 @@ export const useOrderStore = defineStore("order", {
         resp = await api({
           url: "/service/createPurchaseShipment",
           method: "POST",
+          baseURL: commonUtil.getOmsURL(),
           data: params,
         });
 
@@ -237,6 +230,7 @@ export const useOrderStore = defineStore("order", {
         resp = await api({
           url: "/service/createIncomingShipment",
           method: "POST",
+          baseURL: commonUtil.getOmsURL(),
           data: { payload: params },
         });
 
@@ -273,7 +267,7 @@ export const useOrderStore = defineStore("order", {
       return false;
     },
 
-    async getPOHistory(payload: any) {
+    async fetchPOHistory(payload: any) {
       let resp: any;
       let viewIndex = 0;
       const viewSize = 250;
@@ -307,6 +301,7 @@ export const useOrderStore = defineStore("order", {
           resp = await api({
             url: "/performFind",
             method: "POST",
+            baseURL: commonUtil.getOmsURL(),
             data: params,
           });
           if (resp.status === 200 && !commonUtil.hasError(resp) && resp.data?.docs.length > 0) {
@@ -347,6 +342,7 @@ export const useOrderStore = defineStore("order", {
       return api({
         url: "service/changeOrderItemStatus",
         method: "POST",
+        baseURL: commonUtil.getOmsURL(),
         data: payload,
       });
     },

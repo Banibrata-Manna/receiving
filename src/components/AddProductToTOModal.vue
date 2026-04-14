@@ -85,7 +85,7 @@ onIonViewWillEnter(() => {
 });
 
 const getProducts = async (vSize?: any, vIndex?: any) => {
-  const viewSize = vSize ? vSize : import.meta.env.VITE_APP_VIEW_SIZE;
+  const viewSize = vSize ? vSize : import.meta.env.VITE_VIEW_SIZE;
   const viewIndex = vIndex ? vIndex : 0;
   const payload = {
     viewSize,
@@ -133,7 +133,7 @@ const loadMoreProducts = async (event: any) => {
   }
   getProducts(
     undefined,
-    Math.ceil(products.value.length / (import.meta.env.VITE_APP_VIEW_SIZE as any)).toString()
+    Math.ceil(products.value.length / (import.meta.env.VITE_VIEW_SIZE as any)).toString()
   ).then(async () => {
     await event.target.complete();
   });

@@ -75,7 +75,7 @@ const currentFacility = computed(() => productStore.getCurrentFacility);
 const getShipments = async (vSize?: any, vIndex?: any) => {
   queryString.value ? (showErrorMessage.value = true) : (showErrorMessage.value = false);
   fetchingShipments.value = true;
-  const viewSize = vSize ? vSize : import.meta.env.VITE_APP_VIEW_SIZE;
+  const viewSize = vSize ? vSize : import.meta.env.VITE_VIEW_SIZE;
   const viewIndex = vIndex ? vIndex : 0;
   const payload = {
     "inputFields": {
@@ -116,7 +116,7 @@ const getShipments = async (vSize?: any, vIndex?: any) => {
 };
 
 const loadMoreShipments = () => {
-  getShipments(import.meta.env.VITE_APP_VIEW_SIZE, Math.ceil(shipments.value.length / (import.meta.env.VITE_APP_VIEW_SIZE as any)));
+  getShipments(import.meta.env.VITE_VIEW_SIZE, Math.ceil(shipments.value.length / (import.meta.env.VITE_VIEW_SIZE as any)));
 };
 
 const refreshShipments = async (event?: any) => {

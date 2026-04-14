@@ -30,6 +30,7 @@ export const useReturnStore = defineStore("return", {
         resp = await api({
           url: "/performFind",
           method: "post",
+          baseURL: commonUtil.getOmsURL(),
           data: payload,
           cache: true,
         });
@@ -92,6 +93,7 @@ export const useReturnStore = defineStore("return", {
           resp = await api({
             url: "/performFind",
             method: "post",
+            baseURL: commonUtil.getOmsURL(),
             data: getReturnShipmentPayload,
             cache: true,
           });
@@ -169,6 +171,7 @@ export const useReturnStore = defineStore("return", {
           return api({
             url: "receiveShipmentItem",
             method: "post",
+            baseURL: commonUtil.getOmsURL(),
             data: params,
           }).catch((err) => err);
         })
@@ -188,6 +191,7 @@ export const useReturnStore = defineStore("return", {
           const resp: any = await api({
             url: "receiveShipment",
             method: "post",
+            baseURL: commonUtil.getOmsURL(),
             data: {
               shipmentId: payload.shipmentId,
               statusId: "PURCH_SHIP_RECEIVED",
@@ -220,6 +224,7 @@ export const useReturnStore = defineStore("return", {
         resp = await api({
           url: "/performFind",
           method: "post",
+          baseURL: commonUtil.getOmsURL(),
           data: {
             inputFields: {
               statusIdTo: "PURCH_SHIP_RECEIVED",

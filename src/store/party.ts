@@ -27,6 +27,7 @@ export const usePartyStore = defineStore("party", {
         resp = await api({
           url: "performFind",
           method: "post",
+          baseURL: commonUtil.getOmsURL(),
           data: params,
         });
         if (resp.status == 200 && !commonUtil.hasError(resp) && resp.data.count > 0) {

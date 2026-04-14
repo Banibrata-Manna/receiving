@@ -4,6 +4,7 @@ import { DateTime } from "luxon";
 import { computed, ref } from "vue";
 import router from '@/router';
 import { useProductStore } from "@/store/productStore";
+import { useOrderStore } from "@/store/order";
 import { firebaseUtil } from "@/utils/firebaseUtil";
 
 interface LoginOption {
@@ -110,9 +111,14 @@ export function useAuth() {
       if (resp?.logoutAuthType == "SAML2SSO") {
         redirectionUrl = resp.logoutUrl;
       }
+
+      useNotificationStore().$reset();
     }
 
     useUserStore().$reset();
+    useProductStore().$reset();
+    useOrderStore().$reset();
+    useNotificationStore().clearNotificationState();
     cookieHelper().remove('token');
     cookieHelper().remove('expirationTime');
 

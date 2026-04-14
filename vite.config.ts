@@ -14,7 +14,7 @@ export default defineConfig({
     legacy()
   ],
   define: {
-    'import.meta.env.VITE_APP_VERSION_INFO': JSON.stringify(JSON.stringify(versionInfoUtil.getVersionInfo(pkg.version)))
+    'import.meta.env.VITE_VERSION_INFO': JSON.stringify(JSON.stringify(versionInfoUtil.getVersionInfo(pkg.version)))
   },
   resolve: {
     alias: {

@@ -67,11 +67,10 @@ import Logo from '@/components/Logo.vue';
 import { arrowForwardOutline } from 'ionicons/icons'
 import { api, commonUtil, cookieHelper, translate } from "@common";
 import { useAuth } from "@/composables/useAuth";
-import { useRoute, useRouter } from "vue-router";
+import router from "@/router";
 
 const userStore = useUserStore();
-const router = useRouter();
-const route = useRoute();
+
 
 // This is the best practice for defining composable instance, as this ensures in managing the reactive state properly
 const { loginOption, fetchLoginOptions, login: authLogin, clearAuth } = useAuth();
@@ -165,7 +164,7 @@ const setOms = async () => {
 
 const samlLogin = async () => {
   try {
-    const { token, expirationTime } = route.query as any;
+    const { token, expirationTime } = router.currentRoute.value.query as any;
     await userStore.samlLogin(token, expirationTime);
   } catch (error) {
     console.error(error);
@@ -175,7 +174,7 @@ const samlLogin = async () => {
 
 const basicLogin = async () => {
   try {
-    const { oms, token, expirationTime } = route.query as any;
+    const { oms, token, expirationTime } = router.currentRoute.value.query as any;
     // Clear the previously stored oms and token when having oms and token in the URL
     // This is the case when coming from launchpad
     clearAuth()
@@ -219,11 +218,11 @@ const initialise = async () => {
   await presentLoader("Processing");
 
   // Run the basic login flow when oms and token both are found in query
-  if (route.query?.oms && route.query?.token) {
+  if (router.currentRoute.value.query?.oms && router.currentRoute.value.query?.token) {
     await basicLogin();
     dismissLoader();
     return;
-  } else if (route.query?.token) {
+  } else if (router.currentRoute.value.query?.token) {
     // SAML login handling as only token will be returned in the query when login through SAML
     await samlLogin();
     dismissLoader();
@@ -236,13 +235,13 @@ const initialise = async () => {
   }
 
   // show OMS input if SAML if configured or if query or state does not have OMS
-  if (loginOption.value.loginAuthType !== 'BASIC' || route.query?.oms || !cookieHelper().get("OMS")) {
+  if (loginOption.value.loginAuthType !== 'BASIC' || router.currentRoute.value.query?.oms || !cookieHelper().get("OMS")) {
     showOmsInput.value = true;
   }
 
   // Update OMS input if found in query
-  if (route.query?.oms) {
-    instanceUrl.value = route.query.oms as string;
+  if (router.currentRoute.value.query?.oms) {
+    instanceUrl.value = router.currentRoute.value.query.oms as string;
   }
 
   // if a session is already active, login directly in the app

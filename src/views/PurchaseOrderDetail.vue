@@ -353,7 +353,7 @@ const createShipment = async () => {
     router.push('/purchase-orders')
   } else {
     orderStore.getOrderDetail({ orderId: route.params.slug as string }).then(() => {
-      orderStore.getPOHistory({ orderId: order.value.orderId })
+      orderStore.fetchPOHistory({ orderId: order.value.orderId })
     })
   }
 };
@@ -375,7 +375,7 @@ const receiveAll = (item: any) => {
 
 onIonViewWillEnter(() => {
   orderStore.getOrderDetail({ orderId: route.params.slug as string }).then(async () => {
-    await orderStore.getPOHistory({ orderId: order.value.orderId })
+    await orderStore.fetchPOHistory({ orderId: order.value.orderId })
     if (isPOReceived()) {
       showCompletedItems.value = true;
     }

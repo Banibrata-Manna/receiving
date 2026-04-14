@@ -7,7 +7,7 @@ import { onMounted, ref, watch } from "vue";
 import defaultImage from "@/assets/images/defaultImage.png";
 
 const props = defineProps(['src', 'testId']);
-const resourceUrl = ref(import.meta.env.VITE_APP_RESOURCE_URL || '');
+const resourceUrl = ref(import.meta.env.VITE_RESOURCE_URL || '');
 const imageUrl = ref(defaultImage);
 
 onMounted(() => {

@@ -74,7 +74,7 @@ const currentFacility = computed(() => productStore.getCurrentFacility);
 const getPurchaseOrders = async (vSize?: any, vIndex?: any) => {
   queryString.value ? (showErrorMessage.value = true) : (showErrorMessage.value = false);
   fetchingOrders.value = true;
-  const viewSize = vSize ? vSize : import.meta.env.VITE_APP_VIEW_SIZE;
+  const viewSize = vSize ? vSize : import.meta.env.VITE_VIEW_SIZE;
   const viewIndex = vIndex ? vIndex : 0;
   const payload = {
     "json": {
@@ -103,7 +103,7 @@ const getPurchaseOrders = async (vSize?: any, vIndex?: any) => {
 const loadMoreOrders = async () => {
   getPurchaseOrders(
     undefined,
-    Math.ceil(orders.value.length / (import.meta.env.VITE_APP_VIEW_SIZE as any))
+    Math.ceil(orders.value.length / (import.meta.env.VITE_VIEW_SIZE as any))
   );
 };
 

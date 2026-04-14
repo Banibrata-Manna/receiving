@@ -19,18 +19,18 @@ import { translate, emitter } from '@common';
 const route = useRoute();
 const router = useRouter();
 
-const apiKeyEnv = import.meta.env.VITE_APP_SHOPIFY_API_KEY;
-const shopConfigs = JSON.parse(import.meta.env.VITE_APP_SHOPIFY_SHOP_CONFIG || '{}');
+const apiKeyEnv = import.meta.env.VITE_SHOPIFY_API_KEY;
+const shopConfigs = JSON.parse(import.meta.env.VITE_SHOPIFY_SHOP_CONFIG || '{}');
 const session = route.query['session'];
 const shop = route.query['shop'] as string;
 const host = route.query['host'] as string;
 
 const authorise = (shop: string, host: string, apiKey: string) => {
-  const scopes = import.meta.env.VITE_APP_SHOPIFY_SCOPES
+  const scopes = import.meta.env.VITE_SHOPIFY_SCOPES
   emitter.emit("presentLoader");
   const shopConfig = shopConfigs[shop];
   if (!apiKey) apiKey = shopConfig ? shopConfig.apiKey : '';
-  const redirectUri = import.meta.env.VITE_APP_SHOPIFY_REDIRECT_URI;
+  const redirectUri = import.meta.env.VITE_SHOPIFY_REDIRECT_URI;
   const permissionUrl = `https://${shop}/admin/oauth/authorize?client_id=${apiKey}&scope=${scopes}&redirect_uri=${redirectUri}`;
 
   if (window.top == window.self) {

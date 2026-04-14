@@ -76,7 +76,7 @@ const currentFacility: any = computed(() => productStore.getCurrentFacility);
 const getTransferOrders = async (vSize?: any, vIndex?: any) => {
   queryString.value ? showErrorMessage.value = true : showErrorMessage.value = false;
   fetchingOrders.value = true;
-  const limit = vSize ? vSize : import.meta.env.VITE_APP_VIEW_SIZE;
+  const limit = vSize ? vSize : import.meta.env.VITE_VIEW_SIZE;
   const pageIndex = vIndex ? vIndex : 0;
 
   let orderStatusId;
@@ -104,7 +104,7 @@ const getTransferOrders = async (vSize?: any, vIndex?: any) => {
 };
 
 const loadMoreOrders = async () => {
-  const limit = import.meta.env.VITE_APP_VIEW_SIZE;
+  const limit = import.meta.env.VITE_VIEW_SIZE;
   const pageIndex = Math.ceil(orders.value.list.length / limit);
   await getTransferOrders(limit, pageIndex);
 };

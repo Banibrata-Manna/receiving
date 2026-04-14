@@ -27,17 +27,17 @@
 <script setup lang="ts">
 import { IonApp, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonMenu, IonMenuToggle, IonRouterOutlet, IonSplitPane, IonTitle, IonToolbar, loadingController } from '@ionic/vue';
 import { ref, computed, onBeforeMount, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router'
+import router from '@/router'
 import { useAuth } from '@/composables/useAuth'
 import { Settings } from 'luxon';
-import { translate, emitter, useNotificationStore, logger } from "@common";
+import { translate, emitter, useNotificationStore, logger, initialise } from "@common";
 import { firebaseUtil } from '@/utils/firebaseUtil';
 import { useUserStore } from '@/store/user';
 import { useProductStore } from '@/store/productStore';
 
 const userStore = useUserStore();
 const productStore = useProductStore();
-const router = useRouter();
+
 const { isAuthenticated } = useAuth();
 
 const currentFacility = computed(() => productStore.getCurrentFacility);
@@ -70,6 +70,20 @@ const selectedIndex = computed(() => {
 const loader = ref(null as any);
 const userProfile = computed(() => userStore.getUserProfile);
 const allNotificationPrefs = computed(() => useNotificationStore().allNotificationPrefs);
+
+const maxAge = import.meta.env.VITE_VUE_APP_CACHE_MAX_AGE ? parseInt(import.meta.env.VITE_VUE_APP_CACHE_MAX_AGE) : 0
+initialise({
+  cacheMaxAge: maxAge,
+  events: {
+    unauthorised: useAuth().logout,
+    responseError: () => {
+      setTimeout(() => dismissLoader(), 100);
+    },
+    queueTask: (payload: any) => {
+      emitter.emit("queueTask", payload);
+    }
+  }
+})
 
 const presentLoader = async (options = { message: '', backdropDismiss: true }) => {
   // When having a custom message remove already existing loader

@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { client as api, commonUtil, emitter, translate } from "@common";
+import { api, commonUtil, emitter, translate } from "@common";
 import { DateTime } from "luxon";
 import { useProductStore as useProduct } from "@/store/product";
 import { useProductStore } from "@/store/productStore";
@@ -26,6 +26,7 @@ export const useShipmentStore = defineStore("shipment", {
         resp = await api({
           url: "/performFind",
           method: "post",
+          baseURL: commonUtil.getOmsURL(),
           data: payload,
           cache: true,
         });
@@ -164,6 +165,7 @@ export const useShipmentStore = defineStore("shipment", {
             const resp: any = await api({
               url: "receiveShipmentItem",
               method: "post",
+              baseURL: commonUtil.getOmsURL(),
               data: params,
             });
             if (commonUtil.hasError(resp)) {
@@ -213,6 +215,7 @@ export const useShipmentStore = defineStore("shipment", {
         let resp: any = await api({
           url: "uploadAndImportFile",
           method: "post",
+          baseURL: commonUtil.getOmsURL(),
           ...uploadPayload,
         });
         if (resp.status == 200 && !commonUtil.hasError(resp)) {
@@ -221,6 +224,7 @@ export const useShipmentStore = defineStore("shipment", {
             resp = await api({
               url: "/performFind",
               method: "POST",
+              baseURL: commonUtil.getOmsURL(),
               data: {
                 inputFields: {
                   configId: "RECEIVE_SHIP_ITEMS",
@@ -237,6 +241,7 @@ export const useShipmentStore = defineStore("shipment", {
               resp = await api({
                 url: "receiveShipment",
                 method: "post",
+                baseURL: commonUtil.getOmsURL(),
                 data: {
                   shipmentId: payload.shipmentId,
                   statusId: "PURCH_SHIP_RECEIVED",
@@ -382,6 +387,7 @@ export const useShipmentStore = defineStore("shipment", {
         const resp = await api({
           url: "performFind",
           method: "get",
+          baseURL: commonUtil.getOmsURL(),
           params,
         });
 
@@ -416,6 +422,7 @@ export const useShipmentStore = defineStore("shipment", {
         const resp: any = await api({
           url: "performFind",
           method: "get",
+          baseURL: commonUtil.getOmsURL(),
           params,
         });
 
@@ -450,6 +457,7 @@ export const useShipmentStore = defineStore("shipment", {
         const resp: any = await api({
           url: "performFind",
           method: "get",
+          baseURL: commonUtil.getOmsURL(),
           params,
         });
 

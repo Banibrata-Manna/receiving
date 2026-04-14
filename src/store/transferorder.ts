@@ -13,7 +13,7 @@ export const useTransferOrderStore = defineStore("transferorder", {
       total: 0,
       query: {
         viewIndex: 0,
-        viewSize: import.meta.env.VITE_APP_VIEW_SIZE || 10,
+        viewSize: import.meta.env.VITE_VIEW_SIZE || 10,
         queryString: "",
         selectedShipmentMethods: [] as Array<string>,
         selectedStatuses: [] as Array<string>,
@@ -172,7 +172,7 @@ export const useTransferOrderStore = defineStore("transferorder", {
     },
 
     async fetchTOHistory({ payload }: { payload: any }) {
-      const pageSize = import.meta.env.VITE_APP_VIEW_SIZE || 10;
+      const pageSize = import.meta.env.VITE_VIEW_SIZE || 10;
       const misShippedItems = this.getMisShippedItems;
       let pageIndex = 0;
       let allHistory: any[] = [];

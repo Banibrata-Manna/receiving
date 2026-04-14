@@ -82,6 +82,7 @@ export const useProductStore = defineStore("product", {
         const resp: any = await api({
           url: "service/getInventoryAvailableByFacility",
           method: "post",
+          baseURL: commonUtil.getOmsURL(),
           data: payload,
         });
 
