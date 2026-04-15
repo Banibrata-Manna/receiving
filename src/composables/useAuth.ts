@@ -1,4 +1,4 @@
-import { api, client, commonUtil, cookieHelper, emitter, logger, translate, useNotificationStore } from "@common";
+import { api, client, commonUtil, cookieHelper, useEmbeddedAppStore, emitter, logger, translate, useNotificationStore } from "@common";
 import { useUserStore } from "@/store/user";
 import { DateTime } from "luxon";
 import { computed, ref } from "vue";
@@ -26,8 +26,8 @@ export function useAuth() {
 
   const isAuthenticated = computed(() => {
     let isTokenExpired = false;
-    const token = cookieHelper().get("token");
-    const expirationTime = Number(cookieHelper().get("expirationTime"));
+    const token = commonUtil.getToken();
+    const expirationTime = Number(commonUtil.getTokenExpiration());
     if (expirationTime) {
       const currTime = DateTime.now().toMillis();
       isTokenExpired = expirationTime < currTime;
@@ -96,6 +96,14 @@ export function useAuth() {
     if (!payload?.isUserUnauthorised) {
       let resp;
       try {
+        try {
+          const notificationStore = useNotificationStore();
+          if (notificationStore.getFirebaseDeviceId) await notificationStore.removeClientRegistrationToken(notificationStore.getFirebaseDeviceId, import.meta.env.VITE_NOTIF_APP_ID as any);
+          notificationStore.$reset();
+        } catch (error) {
+          logger.error(error);
+        }
+
         resp = await api({
           url: "logout",
           method: "GET",
@@ -115,6 +123,11 @@ export function useAuth() {
       useNotificationStore().$reset();
     }
 
+    if (commonUtil.isAppEmbedded()) {
+      redirectionUrl = window.location.origin + `/shopify-login?shop=${useEmbeddedAppStore().getShop}&host=${useEmbeddedAppStore().getHost}&embedded=1`;
+      useEmbeddedAppStore().$reset();
+    }
+
     useUserStore().$reset();
     useProductStore().$reset();
     useOrderStore().$reset();
@@ -123,7 +136,11 @@ export function useAuth() {
     cookieHelper().remove('expirationTime');
 
     emitter.emit("dismissLoader");
-    return redirectionUrl;
+    if(!redirectionUrl) {
+      router.replace("/login");
+    } else {
+      window.location.href = redirectionUrl
+    }
   }
 
   const fetchLoginOptions = async () => {

@@ -50,19 +50,6 @@ export const useUtilStore = defineStore("util", {
       }
       return cachedStatus;
     },
-
-    async fetchShopifyShopLocation(token: string, payload: any) {
-      return api({
-        url: "performFind",
-        method: "post",
-        baseURL: commonUtil.getOmsURL(),
-        headers: {
-          Authorization: "Bearer " + token,
-          "Content-Type": "application/json",
-        },
-        data: payload,
-      });
-    },
   },
   persist: true,
 });

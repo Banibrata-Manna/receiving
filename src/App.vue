@@ -136,8 +136,8 @@ onMounted(async () => {
 
   // Handles case when user resumes or reloads the app
   // Luxon timezzone should be set with the user's selected timezone
-  if (userProfile.value && userProfile.value.userTimeZone) {
-    Settings.defaultZone = userProfile.value.userTimeZone;
+  if (userProfile.value && userProfile.value.timeZone) {
+    Settings.defaultZone = userProfile.value.timeZone;
   }
 });
 

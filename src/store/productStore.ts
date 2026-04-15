@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { api, commonUtil, logger, translate, useSolrSearch } from '@common'
+import { api, commonUtil, logger, translate, useEmbeddedAppStore, useSolrSearch } from '@common'
 import { useUserStore } from '@/store/user'
 const defaultProductStoreSettings = JSON.parse(import.meta.env.VITE_DEFAULT_PRODUCT_STORE_SETTINGS as string || '{}')
 
@@ -105,11 +105,27 @@ export const useProductStore = defineStore('productStore', {
           }
         }
 
-        if (facilityIds.length) {
-          filters = {
-            facilityId: facilityIds.join(","),
-            facilityId_op: "in",
-            pageSize: facilityIds.length
+        // Only Location's facility for Shopify POS Users.
+        const shopifyLocationId = useEmbeddedAppStore().getPosLocationId
+        if (commonUtil.isAppEmbedded() && shopifyLocationId) {
+          const locationFacilityId = await this.fetchShopifyShopLocation({
+            shopifyLocationId,
+            pageSize: 1
+          })
+          if (locationFacilityId)  {
+            // Here facility ids can be empty the logged in user is admin,
+            // though we're syncing new embedded app users with store manager group this check is required,
+            // push logged in facility id to avoid error in login.
+            if (facilityIds.length) facilityIds = facilityIds.filter((id: any) => id === locationFacilityId)
+            else facilityIds.push(locationFacilityId)
+          }
+          else facilityIds = [];
+          if (!facilityIds.length) {
+            return Promise.reject({
+              code: 'error',
+              message: 'Failed to fetch user facilities for Shopify POS location',
+              serverResponse: resp.data
+            })
           }
         }
 
@@ -126,6 +142,10 @@ export const useProductStore = defineStore('productStore', {
           method: "GET",
           params: {
             pageSize: 500,
+            facilityTypeId: "VIRTUAL_FACILITY",
+            facilityTypeId_not: "Y",
+            parentTypeId: "VIRTUAL_FACILITY",
+            parentTypeId_not: "Y",
             ...filters
           }
         }
@@ -157,23 +177,46 @@ export const useProductStore = defineStore('productStore', {
     },
     async fetchFacilityPreference() {
       const userStore = useUserStore();
+      let facilityId: string | undefined;
       try {
-        const preferredFacilityResp = await api({
-          url: "admin/user/preferences",
-          method: "GET",
-          params: {
+        const locationId = useEmbeddedAppStore().getPosLocationId;
+        if (commonUtil.isAppEmbedded() && locationId) {
+          facilityId = await this.fetchShopifyShopLocation({
+            shopifyLocationId: locationId,
             pageSize: 1,
-            userId: userStore.current.userId,
-            preferenceKey: "SELECTED_FACILITY"
-          },
-        }) as any;
-        const preferredFacilityId = preferredFacilityResp.data?.[0]?.preferenceValue;
-        if (preferredFacilityId) {
-          const currentFacility = this.userFacilities.find((facility: any) => facility.facilityId === preferredFacilityId);
-          currentFacility && this.setCurrentFacility(currentFacility)
+          });
+          if (!facilityId) {
+            throw new Error("Failed to fetch location information. Please contact the administrator.");
+          }
+        } else {
+          const preferredFacilityResp = await api({
+            url: "admin/user/preferences",
+            method: "GET",
+            params: {
+              pageSize: 1,
+              userId: userStore.current.userId,
+              preferenceKey: "SELECTED_FACILITY"
+            },
+          }) as any;
+          facilityId = preferredFacilityResp.data?.[0]?.preferenceValue;
+        }
+
+        if (facilityId) {
+          const facility = this.userFacilities.find((f: any) => f.facilityId === facilityId);
+          if (!facility && commonUtil.isAppEmbedded() && locationId) {
+            throw new Error("User is not associated with this location. Please contact the administrator.");
+          }
+          if (facility) {
+            this.currentFacility = facility;
+            return;
+          }
         }
       } catch (err) {
-        logger.error('Favourite facility not found', err)
+        logger.error('Failed to resolve facility preference:', err)
+      }
+      // Fallback to first associated facility
+      if (this.userFacilities?.length) {
+        this.currentFacility = this.userFacilities[0];
       }
     },
     async fetchProductStores(currentFacilityId?: string) {
@@ -414,6 +457,14 @@ export const useProductStore = defineStore('productStore', {
     clearFacilities() {
       this.userFacilities = {};
       this.facilityLocationsByFacilityId = {};
+    },
+    async fetchShopifyShopLocation(payload: { shopifyLocationId: string, pageSize: number }): Promise<any> {
+      try {
+        const resp = await api({ url: "oms/shopifyShops/locations", method: "GET", params: payload }) as any;
+        return Promise.resolve(resp.data[0]?.facilityId)
+      } catch(error) {
+        return Promise.reject({ code: "error", message: "Failed to fetch location information", serverResponse: error })
+      }
     },
   },
   persist: true
