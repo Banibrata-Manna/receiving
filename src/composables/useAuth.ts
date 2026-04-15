@@ -98,7 +98,7 @@ export function useAuth() {
       try {
         try {
           const notificationStore = useNotificationStore();
-          await notificationStore.removeClientRegistrationToken(notificationStore.getFirebaseDeviceId, import.meta.env.VITE_NOTIF_APP_ID as any);
+          if (notificationStore.getFirebaseDeviceId) await notificationStore.removeClientRegistrationToken(notificationStore.getFirebaseDeviceId, import.meta.env.VITE_NOTIF_APP_ID as any);
           notificationStore.$reset();
         } catch (error) {
           logger.error(error);
