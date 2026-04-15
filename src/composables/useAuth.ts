@@ -99,6 +99,7 @@ export function useAuth() {
         try {
           const notificationStore = useNotificationStore();
           await notificationStore.removeClientRegistrationToken(firebaseDeviceId.value, import.meta.env.VITE_NOTIF_APP_ID as any);
+          notificationStore.$reset();
         } catch (error) {
           logger.error(error);
         }
