@@ -125,7 +125,7 @@ const firebaseDeviceId = computed(() => notificationStore.getFirebaseDeviceId);
 const isProductStoreSettingEnabled = computed(() => (settingTypeEnumId: string) => productStore.isProductStoreSettingEnabled(settingTypeEnumId));
 const barcodeIdentificationPref = computed(() => productStore.getBarcodeIdentifierPref);
 const currentFacility = computed(() => productStore.getCurrentFacility);
-const preferredStore = computed(() => productStore.getCurrentEComStore);
+const preferredStore = computed(() => productStore.getCurrentProductStore);
 const barcodeIdentificationOptions = computed(() => productStore.getBarcodeIdentifierOptions);
 
 const logout = async () => {
@@ -138,7 +138,7 @@ const goToLaunchpad = () => {
 
 const fetchFacilityDependencies = async (facility: any) => {
   await productStore.fetchProductStores(facility?.facilityId)
-  await productStore.fetchEComStoreDependencies(productStore.getCurrentEComStore.productStoreId)
+  await productStore.fetchProductStoreDependencies(productStore.getCurrentProductStore.productStoreId)
   await notificationStore.fetchNotificationPreferences(import.meta.env.VITE_NOTIF_ENUM_TYPE_ID, import.meta.env.VITE_NOTIF_APP_ID, userStore.getUserProfile.userLoginId, (enumId: string) => firebaseMessaging.generateTopicName(commonUtil.getOMSInstanceName(), productStore.getCurrentFacility.facilityId, enumId));
 };
 

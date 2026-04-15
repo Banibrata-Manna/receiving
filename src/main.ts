@@ -5,7 +5,6 @@ import { IonicVue } from '@ionic/vue';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/vue/css/core.css';
-import '@hotwax/apps-theme';
 
 /* Basic CSS for apps built with Ionic */
 import '@ionic/vue/css/normalize.css';
@@ -21,6 +20,8 @@ import '@ionic/vue/css/flex-utils.css';
 import '@ionic/vue/css/display.css';
 
 /* Theme variables */
+import "@common/css/settings.css"
+import "@common/css/theme.css"
 import './theme/variables.css';
 
 import { createPinia } from 'pinia'

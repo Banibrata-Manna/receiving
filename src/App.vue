@@ -69,9 +69,9 @@ const selectedIndex = computed(() => {
 
 const loader = ref(null as any);
 const userProfile = computed(() => userStore.getUserProfile);
-const allNotificationPrefs = computed(() => useNotificationStore().allNotificationPrefs);
+const allNotificationPrefs = computed(() => useNotificationStore().getAllNotificationPrefs);
 
-const maxAge = import.meta.env.VITE_VUE_APP_CACHE_MAX_AGE ? parseInt(import.meta.env.VITE_VUE_APP_CACHE_MAX_AGE) : 0
+const maxAge = import.meta.env.VITE_CACHE_MAX_AGE ? parseInt(import.meta.env.VITE_CACHE_MAX_AGE) : 0
 initialise({
   cacheMaxAge: maxAge,
   events: {
@@ -125,9 +125,9 @@ onBeforeMount(() => {
 });
 
 onMounted(async () => {
-  const currentEComStore: any = productStore.getCurrentEComStore;
-  if (isAuthenticated.value && currentEComStore?.productStoreId) {
-    await productStore.fetchProductStoreSettings(currentEComStore.productStoreId).catch((error) => logger.error(error));
+  const currentProductStore: any = productStore.getCurrentProductStore;
+  if (isAuthenticated.value && currentProductStore?.productStoreId) {
+    await productStore.fetchProductStoreSettings(currentProductStore.productStoreId).catch((error) => logger.error(error));
 
     if (allNotificationPrefs.value?.length) {
       await firebaseUtil.initialiseFirebaseMessaging();

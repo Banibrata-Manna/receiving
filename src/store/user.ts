@@ -126,7 +126,7 @@ export const useUserStore = defineStore("user", {
       }
     },
     async fetchPermissions() {
-      const permissionId = import.meta.env.VITE_VUE_APP_PERMISSION_ID;
+      const permissionId = import.meta.env.VITE_APP_PERMISSION_ID;
       const serverPermissions = [] as any;
 
       // TODO Make it configurable from the environment variables.

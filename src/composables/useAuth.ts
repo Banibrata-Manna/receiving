@@ -60,7 +60,7 @@ export function useAuth() {
       await productStore.fetchUserFacilities()
       await productStore.fetchFacilityPreference();
       await productStore.fetchProductStores()
-      await productStore.fetchEComStoreDependencies(productStore.getCurrentEComStore.productStoreId)
+      await productStore.fetchProductStoreDependencies(productStore.getCurrentProductStore.productStoreId)
 
       const notificationStore = useNotificationStore();
       await notificationStore.fetchAllNotificationPrefs(import.meta.env.VITE_NOTIF_APP_ID, useUserStore().getUserProfile.userId)

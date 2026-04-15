@@ -10,7 +10,7 @@ export const useProductStore = defineStore('productStore', {
       facilityName: "",
       productStores: []
     } as any,
-    currentEComStore: {} as any,
+    currentProductStore: {} as any,
     settings: {
       forceScan: "",
       receiveByFulfillment: "",
@@ -34,7 +34,7 @@ export const useProductStore = defineStore('productStore', {
 
   getters: {
     getCurrentFacility: (state) => state.currentFacility,
-    getCurrentEComStore: (state) => state.currentEComStore,
+    getCurrentProductStore: (state) => state.currentProductStore,
     getProductStores: (state) => state.currentFacility.productStores || [],
     getFacilities: (state) => state.userFacilities || [],
     getSettings: (state) => state.settings,
@@ -54,9 +54,9 @@ export const useProductStore = defineStore('productStore', {
     setCurrentFacility(facility: any) {
       this.currentFacility = facility
     },
-    async setCurrentEComStore(store: any) {
-      this.currentEComStore = store
-      await this.fetchEComStoreDependencies(store.productStoreId)
+    async setCurrentProductStore(store: any) {
+      this.currentProductStore = store
+      await this.fetchProductStoreDependencies(store.productStoreId)
     },
     async fetchUserFacilities() {
       const userStore = useUserStore();
@@ -264,13 +264,13 @@ export const useProductStore = defineStore('productStore', {
           ...this.currentFacility,
           productStores
         }
-        this.setCurrentEComStore(productStores[0])
+        this.setCurrentProductStore(productStores[0])
       } catch (error: any) {
         logger.error("error", error);
         return Promise.reject(new Error(error));
       }
     },
-    async fetchEComStoreDependencies(productStoreId: string) {
+    async fetchProductStoreDependencies(productStoreId: string) {
       await useProductStore().fetchProductStoreSettings(productStoreId)
         .catch((error) => logger.error(error))
     },

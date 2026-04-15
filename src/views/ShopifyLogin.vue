@@ -19,9 +19,10 @@
 import { IonContent, IonPage, onIonViewDidEnter, onIonViewDidLeave } from "@ionic/vue";
 import { ref } from "vue";
 import router from "@/router";
-import { emitter, translate, useEmbeddedAppStore, useShopify } from "@common";
+import { emitter, translate, useEmbeddedAppStore, useNotificationStore, useShopify } from "@common";
 import { useUserStore } from "@/store/user";
 import { useProductStore } from "@/store/productStore";
+import { firebaseUtil } from "@/utils/firebaseUtil";
 import { warningOutline } from "ionicons/icons";
 
 const { appBridgeLogin } = useShopify();
@@ -44,7 +45,11 @@ onIonViewDidEnter(async () => {
       await productStore.fetchUserFacilities()
       await productStore.fetchFacilityPreference()
       await productStore.fetchProductStores()
-      await productStore.fetchEComStoreDependencies(productStore.getCurrentEComStore.productStoreId)
+      await productStore.fetchProductStoreDependencies(productStore.getCurrentProductStore.productStoreId)
+
+      const notificationStore = useNotificationStore();
+      await notificationStore.fetchAllNotificationPrefs(import.meta.env.VITE_NOTIF_APP_ID, useUserStore().getUserProfile.userId)
+      await firebaseUtil.initialiseFirebaseMessaging();
 
       router.push("/");
     } else {
