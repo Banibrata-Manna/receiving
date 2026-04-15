@@ -105,14 +105,6 @@ export const useProductStore = defineStore('productStore', {
           }
         }
 
-        if (facilityIds.length) {
-          filters = {
-            facilityId: facilityIds.join(","),
-            facilityId_op: "in",
-            pageSize: facilityIds.length
-          }
-        }
-
         // Only Location's facility for Shopify POS Users.
         const shopifyLocationId = useEmbeddedAppStore().getPosLocationId
         if (commonUtil.isAppEmbedded() && shopifyLocationId) {
@@ -120,7 +112,13 @@ export const useProductStore = defineStore('productStore', {
             shopifyLocationId,
             pageSize: 1
           })
-          if (locationFacilityId) facilityIds = facilityIds.filter((id: any) => id === locationFacilityId)
+          if (locationFacilityId)  {
+            // Here facility ids can be empty the logged in user is admin,
+            // though we're syncing new embedded app users with store manager group this check is required,
+            // push logged in facility id to avoid error in login.
+            if (facilityIds.length) facilityIds = facilityIds.filter((id: any) => id === locationFacilityId)
+            else facilityIds.push(locationFacilityId)
+          }
           else facilityIds = [];
           if (!facilityIds.length) {
             return Promise.reject({
@@ -144,6 +142,10 @@ export const useProductStore = defineStore('productStore', {
           method: "GET",
           params: {
             pageSize: 500,
+            facilityTypeId: "VIRTUAL_FACILITY",
+            facilityTypeId_not: "Y",
+            parentTypeId: "VIRTUAL_FACILITY",
+            parentTypeId_not: "Y",
             ...filters
           }
         }
