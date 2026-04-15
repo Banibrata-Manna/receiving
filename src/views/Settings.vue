@@ -15,8 +15,8 @@
               <Image :src="userProfile.partyImageUrl" />
             </ion-avatar>
             <ion-card-header class="ion-no-padding ion-padding-vertical">
-              <ion-card-subtitle>{{ userProfile?.userLoginId }}</ion-card-subtitle>
-              <ion-card-title>{{ userProfile?.partyName }}</ion-card-title>
+              <ion-card-subtitle>{{ userProfile?.username }}</ion-card-subtitle>
+              <ion-card-title>{{ userProfile?.userFullName }}</ion-card-title>
             </ion-card-header>
           </ion-item>
           <ion-button v-if="!commonUtil.isAppEmbedded()" color="danger" @click="logout()">{{ translate("Logout") }}</ion-button>
