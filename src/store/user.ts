@@ -11,11 +11,10 @@ interface UserState {
     registration: any
   }
   timeZones: any[],
-  currentTimeZoneId: string,
   isEmbedded: boolean
 }
 
-export const useUserStore = defineStore("appUser", {
+export const useUserStore = defineStore("user", {
   state: (): UserState => ({
     permissions: [],
     current: {},
@@ -24,13 +23,11 @@ export const useUserStore = defineStore("appUser", {
       registration: null
     },
     timeZones: [],
-    currentTimeZoneId: '',
     isEmbedded: false
   }),
   getters: {
     getTimeZones: (state) => state.timeZones,
-    getCurrentTimeZone: (state) => state.currentTimeZoneId,
-    isUserAuthenticated: (state) => !!cookieHelper().get("token"),
+    getCurrentTimeZone: (state) => state.current.timeZone,
     getUserPermissions(state: UserState) {
       return state.permissions
     },
@@ -181,10 +178,10 @@ export const useUserStore = defineStore("appUser", {
         await api({
           url: "admin/user/profile",
           method: "POST",
-          data: { userId: this.current.userId, userTimeZone: tzId },
+          data: { userId: this.current.userId, timeZone: tzId },
         });
         this.updateUserInfo({ userTimeZone: tzId })
-        this.currentTimeZoneId = tzId
+        this.current.timeZone = tzId
       } catch (error: any) {
         console.error("Failed to set user time zone", error);
         commonUtil.showToast(translate("Failed to set user time zone"));

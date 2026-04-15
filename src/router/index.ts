@@ -5,7 +5,8 @@ import ShipmentDetails from '@/views/ShipmentDetails.vue'
 import Settings from "@/views/Settings.vue"
 import PurchaseOrders from "@/views/PurchaseOrders.vue"
 import PurchaseOrderDetail from "@/views/PurchaseOrderDetail.vue"
-import Shopify from '@/views/Shopify.vue'
+import ShopifyAppInstall from '@/views/ShopifyAppInstall.vue'
+import ShopifyLogin from '@/views/ShopifyLogin.vue'
 import Returns from '@/views/Returns.vue'
 import ReturnDetails from '@/views/ReturnDetails.vue'
 import TransferOrders from '@/views/TransferOrders.vue';
@@ -33,7 +34,11 @@ declare module 'vue-router' {
 const authGuard = async (to: any, from: any, next: any) => {
   const { isAuthenticated } = useAuth()
   if (!isAuthenticated.value) {
-    next('/login');
+    if (commonUtil.isAppEmbedded()) {
+      next('/shopify-login')
+    } else {
+      next('/login');
+    }
   } else {
     next()
   }
@@ -81,6 +86,12 @@ const routes: Array<RouteRecordRaw> = [
     beforeEnter: loginGuard
   },
   {
+    path: '/shopify-login',
+    name: 'ShopifyLogin',
+    component: ShopifyLogin,
+    beforeEnter: loginGuard
+  },
+  {
     path: "/settings",
     name: "Settings",
     component: Settings,
@@ -114,9 +125,9 @@ const routes: Array<RouteRecordRaw> = [
     }
   },
   {
-    path: '/shopify',
-    name: 'Shopify',
-    component: Shopify
+    path: '/shopify-app-install',
+    name: 'ShopifyAppInstall',
+    component: ShopifyAppInstall
   },
   {
     path: '/returns',

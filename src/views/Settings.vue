@@ -19,8 +19,8 @@
               <ion-card-title>{{ userProfile?.partyName }}</ion-card-title>
             </ion-card-header>
           </ion-item>
-          <ion-button color="danger" @click="logout()">{{ translate("Logout") }}</ion-button>
-          <ion-button fill="outline" @click="goToLaunchpad()">
+          <ion-button v-if="!commonUtil.isAppEmbedded()" color="danger" @click="logout()">{{ translate("Logout") }}</ion-button>
+          <ion-button v-if="!commonUtil.isAppEmbedded()" fill="outline" @click="goToLaunchpad()">
             {{ translate("Go to Launchpad") }}
             <ion-icon slot="end" :icon="openOutline" />
           </ion-button>
@@ -32,7 +32,7 @@
       </div>
 
       <section>
-        <DxpOmsInstanceNavigator />
+        <DxpOmsInstanceNavigator :is-embedded="commonUtil.isAppEmbedded()" />
         <DxpFacilitySwitcher @updateFacility="fetchFacilityDependencies($event)" />
       </section>
       <hr />
@@ -128,24 +128,8 @@ const currentFacility = computed(() => productStore.getCurrentFacility);
 const preferredStore = computed(() => productStore.getCurrentEComStore);
 const barcodeIdentificationOptions = computed(() => productStore.getBarcodeIdentifierOptions);
 
-const refreshProductStoreData = (selectedProductStore: any) => {
-  productStore.fetchEComStoreDependencies(selectedProductStore?.productStoreId);
-};
-
 const logout = async () => {
-  try {
-    await notificationStore.removeClientRegistrationToken(firebaseDeviceId.value, import.meta.env.VITE_NOTIF_APP_ID as any);
-  } catch (error) {
-    logger.error(error);
-  }
-
-  useAuth().logout({ isUserUnauthorised: false }).then((redirectionUrl) => {
-    if(!redirectionUrl) {
-      router.replace("/login");
-    } else {
-      window.location.href = redirectionUrl
-    }
-  })
+  await useAuth().logout({ isUserUnauthorised: false })
 }
 
 const goToLaunchpad = () => {
