@@ -106,7 +106,7 @@ import DxpFacilitySwitcher from "@/components/DxpFacilitySwitcher.vue";
 import DxpAppVersionInfo from "@/components/DxpAppVersionInfo.vue";
 import DxpProductIdentifier from "@/components/DxpProductIdentifier.vue";
 import DxpTimeZoneSwitcher from "@/components/DxpTimeZoneSwitcher.vue";
-import { useAuth } from "@/composables/useAuth";
+import { useAuth } from "@common/composables/auth";
 import router from "@/router";
 import { firebaseUtil } from "@/utils/firebaseUtil"
 

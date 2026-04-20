@@ -28,9 +28,9 @@
 import { IonApp, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonMenu, IonMenuToggle, IonRouterOutlet, IonSplitPane, IonTitle, IonToolbar, loadingController } from '@ionic/vue';
 import { ref, computed, onBeforeMount, onMounted, onUnmounted } from 'vue';
 import router from '@/router'
-import { useAuth } from '@/composables/useAuth'
+import { useAuth } from '@common/composables/auth'
 import { Settings } from 'luxon';
-import { translate, emitter, useNotificationStore, logger, initialise } from "@common";
+import { translate, emitter, useNotificationStore, logger } from "@common";
 import { firebaseUtil } from '@/utils/firebaseUtil';
 import { useUserStore } from '@/store/user';
 import { useProductStore } from '@/store/productStore';
@@ -71,19 +71,7 @@ const loader = ref(null as any);
 const userProfile = computed(() => userStore.getUserProfile);
 const allNotificationPrefs = computed(() => useNotificationStore().getAllNotificationPrefs);
 
-const maxAge = import.meta.env.VITE_CACHE_MAX_AGE ? parseInt(import.meta.env.VITE_CACHE_MAX_AGE) : 0
-initialise({
-  cacheMaxAge: maxAge,
-  events: {
-    unauthorised: useAuth().logout,
-    responseError: () => {
-      setTimeout(() => dismissLoader(), 100);
-    },
-    queueTask: (payload: any) => {
-      emitter.emit("queueTask", payload);
-    }
-  }
-})
+
 
 const presentLoader = async (options = { message: '', backdropDismiss: true }) => {
   // When having a custom message remove already existing loader
