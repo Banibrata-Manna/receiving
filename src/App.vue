@@ -28,9 +28,8 @@
 import { IonApp, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonMenu, IonMenuToggle, IonRouterOutlet, IonSplitPane, IonTitle, IonToolbar, loadingController } from '@ionic/vue';
 import { ref, computed, onBeforeMount, onMounted, onUnmounted } from 'vue';
 import router from '@/router'
-import { useAuth } from '@common/composables/auth'
 import { Settings } from 'luxon';
-import { translate, emitter, useNotificationStore, logger } from "@common";
+import { translate, emitter, useNotificationStore, logger, useAuth } from "@common";
 import { firebaseUtil } from '@/utils/firebaseUtil';
 import { useUserStore } from '@/store/user';
 import { useProductStore } from '@/store/productStore';

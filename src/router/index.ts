@@ -5,18 +5,12 @@ import ShipmentDetails from '@/views/ShipmentDetails.vue'
 import Settings from "@/views/Settings.vue"
 import PurchaseOrders from "@/views/PurchaseOrders.vue"
 import PurchaseOrderDetail from "@/views/PurchaseOrderDetail.vue"
-import ShopifyAppInstall from '@/views/ShopifyAppInstall.vue'
-import ShopifyLogin from '@/views/ShopifyLogin.vue'
 import Returns from '@/views/Returns.vue'
 import ReturnDetails from '@/views/ReturnDetails.vue'
 import TransferOrders from '@/views/TransferOrders.vue';
 import TransferOrderDetail from '@/views/TransferOrderDetail.vue';
-import Notifications from '@/views/Notifications.vue'
-import Login from '@common/components/Login.vue'
-
 import { useUserStore } from '@/store/user';
-import { translate, commonUtil } from '@common';
-import { useAuth } from '@common/composables/auth'
+import { translate, commonUtil, useAuth, ShopifyLogin, ShopifyAppInstall, Login } from '@common'
 
 import { businessOutline, calendar, download, gitPullRequestOutline, settingsOutline } from "ionicons/icons";
 

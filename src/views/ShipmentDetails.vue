@@ -98,7 +98,7 @@ import { IonBackButton, IonBadge, IonButton, IonButtons, IonCard, IonContent, Io
 import { computed, onMounted, ref } from 'vue';
 import { add, checkmarkDone, checkmarkDoneCircleOutline, cameraOutline, cubeOutline, locationOutline, warningOutline } from 'ionicons/icons';
 import AddProductModal from '@/views/AddProductModal.vue'
-import { DxpShopifyImg, translate, commonUtil } from '@common';
+import { DxpShopifyImg, translate, commonUtil, useEmbeddedAppStore, useShopify } from '@common';
 import { useProductStore } from '@/store/productStore';
 import { useRoute, useRouter } from 'vue-router';
 import Scanner from "@/components/Scanner.vue";
@@ -270,6 +270,14 @@ const updateProductCount = async (payload?: any) => {
 };
 
 const scanCode = async () => {
+  if (useEmbeddedAppStore().getPosLocationId) {
+    try {
+      const scannedCode = await useShopify().openPosScanner();
+      if (scannedCode) updateProductCount(scannedCode);
+    } catch (err) {
+      console.error("POS Scanner error:", err);
+    }
+  } else {
   if (!(await commonUtil.hasWebcamAccess())) {
     commonUtil.showToast(translate("Camera access not allowed, please check permissions."));
     return;
@@ -283,6 +291,7 @@ const scanCode = async () => {
     }
   });
   return modal.present();
+  }
 };
 
 const searchProduct = () => {
