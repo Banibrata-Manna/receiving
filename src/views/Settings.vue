@@ -97,7 +97,7 @@
 import { IonAvatar, IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCardSubtitle, IonContent, IonHeader, IonIcon, IonItem, IonList, IonMenuButton, IonPage, IonSelect, IonSelectOption, IonTitle, IonToggle, IonToolbar, alertController, onIonViewWillEnter } from "@ionic/vue";
 import { computed } from "vue";
 import { openOutline } from "ionicons/icons";
-import { commonUtil, emitter, firebaseMessaging, logger, translate, useNotificationStore } from "@common";
+import { commonUtil, emitter, firebaseMessaging, logger, translate, useNotificationStore, useAuth } from "@common";
 import { useProductStore } from "@/store/productStore";
 import { useUserStore } from "@/store/user";
 import Image from "@/components/Image.vue";
@@ -106,8 +106,6 @@ import DxpFacilitySwitcher from "@/components/DxpFacilitySwitcher.vue";
 import DxpAppVersionInfo from "@/components/DxpAppVersionInfo.vue";
 import DxpProductIdentifier from "@/components/DxpProductIdentifier.vue";
 import DxpTimeZoneSwitcher from "@/components/DxpTimeZoneSwitcher.vue";
-import { useAuth } from "@common/composables/auth";
-import router from "@/router";
 import { firebaseUtil } from "@/utils/firebaseUtil"
 
 const userStore = useUserStore();

@@ -1,7 +1,6 @@
-import { api, commonUtil, cookieHelper, logger, translate, useNotificationStore, useEmbeddedAppStore, firebaseUtil } from "@common";
+import { api, commonUtil, cookieHelper, logger, translate, useNotificationStore, useEmbeddedAppStore, useAuth } from "@common";
 import { defineStore } from "pinia"
 import { DateTime, Settings } from "luxon"
-import { useAuth } from "@common/composables/auth";
 import router from '@/router';
 import { useProductStore } from "@/store/productStore";
 import { useOrderStore } from "@/store/order";
@@ -11,6 +10,7 @@ import { useReturnStore } from "@/store/return";
 import { useShipmentStore } from "@/store/shipment";
 import { useTransferOrderStore } from "@/store/transferorder";
 import { useUtilStore } from "@/store/util";
+import { firebaseUtil } from "@/utils/firebaseUtil";
 
 interface UserState {
   permissions: any[]

@@ -55,10 +55,9 @@ import { computed, ref } from 'vue';
 import PurchaseOrderItem from '@/components/PurchaseOrderItem.vue'
 import { translate } from "@common"
 import { useProductStore } from '@/store/productStore';
-import { useRouter } from 'vue-router';
 import { useOrderStore } from '@/store/order';
+import router from '@/router';
 
-const router = useRouter();
 const productStore = useProductStore();
 const orderStore = useOrderStore();
 

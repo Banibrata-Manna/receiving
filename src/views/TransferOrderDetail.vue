@@ -358,7 +358,7 @@ import { IonBackButton, IonButton, IonButtons, IonCard, IonChip, IonContent, Ion
 import { nextTick, ref, computed } from 'vue';
 import { addOutline, cameraOutline, checkmarkDone, copyOutline, cubeOutline, informationCircleOutline, openOutline, timeOutline } from 'ionicons/icons';
 import ReceivingHistoryModal from '@/views/ReceivingHistoryModal.vue'
-import { DxpShopifyImg, translate, commonUtil, emitter } from '@common';
+import { DxpShopifyImg, translate, commonUtil, emitter, useEmbeddedAppStore, useShopify } from '@common';
 import { useProductStore } from '@/store/productStore';
 import { useRoute, useRouter } from 'vue-router';
 import { useTransferOrderStore } from '@/store/transferorder';
@@ -372,14 +372,13 @@ import AddProductToTOModal from '@/components/AddProductToTOModal.vue';
 import { DateTime } from 'luxon';
 import ReceivingInstructions from '@/components/ReceivingInstructions.vue';
 import ReceiveTransferOrder from '@/components/ReceiveTransferOrder.vue';
+import router from '@/router';
 
 const transferOrderStore = useTransferOrderStore();
 const product = useProduct();
 const utilStore = useUtilStore();
 const userStore = useUserStore();
 const productStore = useProductStore();
-const route = useRoute();
-const router = useRouter();
 
 const queryString = ref('');
 const showCompletedItems = ref(false);
@@ -484,6 +483,14 @@ const openImage = async (imageUrl: string, productName: string) => {
 };
 
 const scan = async () => {
+  if (useEmbeddedAppStore().getPosLocationId) {
+    try {
+      const scannedCode = await useShopify().openPosScanner();
+      if (scannedCode) updateProductCount(scannedCode);
+    } catch (err) {
+      console.error("POS Scanner error:", err);
+    }
+  } else {
   if (!(await commonUtil.hasWebcamAccess())) {
     commonUtil.showToast(translate("Camera access not allowed, please check permissions."));
     return;
@@ -497,6 +504,7 @@ const scan = async () => {
     }
   });
   return modal.present();
+  }
 };
 
 const updateProductCount = async (payload: any) => {
@@ -858,8 +866,8 @@ onIonViewWillEnter(async () => {
   emitter.emit('presentLoader', { backdropDismiss: false, message: translate("Fetching details...") });
   transferOrderStore.clearTransferOrderDetail();
 
-  await transferOrderStore.fetchMisShippedItems({ orderId: route.params.slug });
-  await transferOrderStore.fetchTransferOrderDetail({ orderId: route.params.slug });
+  await transferOrderStore.fetchMisShippedItems({ orderId: router.currentRoute.value.params.slug });
+  await transferOrderStore.fetchTransferOrderDetail({ orderId: router.currentRoute.value.params.slug });
   await transferOrderStore.fetchTOHistory({
     payload: {
       orderId: order.value.orderId,
