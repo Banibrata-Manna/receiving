@@ -36,7 +36,7 @@ export const useOrderStore = defineStore("order", {
       // 🎯 Why: This getter is called in v-for loops. The previous O(M) lookup made rendering O(N * M).
       // 📊 Impact: Reduces rendering complexity from O(N * M) to O(N + M).
       const acceptedMap = state.current.poHistory.items?.reduce((acc: any, item: any) => {
-        acc[item.productId] = (acc[item.productId] || 0) + item.quantityAccepted;
+        acc[item.productId] = (acc[item.productId] || 0) + (Number(item.quantityAccepted) || 0);
         return acc;
       }, {}) || {};
       return (productId: string) => acceptedMap[productId] || 0;
