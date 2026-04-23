@@ -31,10 +31,7 @@ export const useOrderStore = defineStore("order", {
     isProductAvailableInOrder: (state) => (productId: string) => state.current.items.some((item: any) => item.productId === productId),
     getPOHistory: (state) => state.current.poHistory,
     getPOItemAccepted: (state) => {
-      // ⚡ Bolt: memoize PO history items accepted quantity
-      // 💡 What: Reduced poHistory.items into a map instead of running filter/reduce for every productId lookup.
-      // 🎯 Why: This getter is called in v-for loops. The previous O(M) lookup made rendering O(N * M).
-      // 📊 Impact: Reduces rendering complexity from O(N * M) to O(N + M).
+      // Memoize PO history items accepted quantity to optimize lookups in lists.
       const acceptedMap = state.current.poHistory.items?.reduce((acc: any, item: any) => {
         acc[item.productId] = (acc[item.productId] || 0) + (Number(item.quantityAccepted) || 0);
         return acc;
