@@ -222,8 +222,8 @@ export const useOrderStore = defineStore("order", {
       } catch (error) {
         console.error(error);
         commonUtil.showToast(translate("Something went wrong"));
+        return Promise.reject(error);
       }
-      return false;
     },
 
     async fetchPOHistory(payload: any) {

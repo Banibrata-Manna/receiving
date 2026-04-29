@@ -96,19 +96,20 @@ const isPOItemStatusPending = (item: any) => {
 const updatePOItemStatus = async () => {
   // Shipment can only be created if quantity is specified for atleast one PO item.
   // In some cases we don't need to create shipment instead directly need to close PO items.
-  order.value.items.forEach((item: any) => {
+  const currentOrder = JSON.parse(JSON.stringify(order.value));
+  currentOrder.items.forEach((item: any) => {
     if (item.isChecked && isPOItemStatusPending(item)) {
       item.statusId = 'ITEM_COMPLETED';
     }
   });
-  await orderStore.createAndReceiveIncomingShipment({ items: order.value.items, orderId: order.value.orderId })
-  const isPOCompleted = order.value.items.some((item: any) => isPOItemStatusPending(item))
-  await orderStore.updateCurrentOrder(order.value)
+  await orderStore.createAndReceiveIncomingShipment({ items: currentOrder.items, orderId: currentOrder.orderId })
+  const isPOCompleted = !currentOrder.items.some((item: any) => isPOItemStatusPending(item))
+  await orderStore.updateCurrentOrder(currentOrder)
 
   if(purchaseOrders.value.length) {
     let purchaseOrdersList = JSON.parse(JSON.stringify(purchaseOrders.value))
     if(isPOCompleted) {
-      purchaseOrdersList = purchaseOrdersList.filter((purchaseOrder: any) => purchaseOrder.orderId !== order.value.orderId)
+      purchaseOrdersList = purchaseOrdersList.filter((purchaseOrder: any) => purchaseOrder.orderId !== currentOrder.orderId)
     }
     await orderStore.updatePurchaseOrders({ purchaseOrders: purchaseOrdersList })
   }
