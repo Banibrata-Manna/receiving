@@ -5,7 +5,6 @@ import { IonicVue } from '@ionic/vue';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/vue/css/core.css';
-import '@hotwax/apps-theme';
 
 /* Basic CSS for apps built with Ionic */
 import '@ionic/vue/css/normalize.css';
@@ -21,12 +20,15 @@ import '@ionic/vue/css/flex-utils.css';
 import '@ionic/vue/css/display.css';
 
 /* Theme variables */
+import "@common/css/settings.css"
+import "@common/css/theme.css"
 import './theme/variables.css';
 
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import { createDxpI18n } from '@common';
+import { createDxpI18n, initialiseConfig } from '@common';
 import localeMessages from './locales';
+import { useUserStore } from './store/user';
 
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);
@@ -41,6 +43,16 @@ const app = createApp(App)
   .use(i18n)
   .use(pinia)
   .use(router)
+
+initialiseConfig({
+  postLogin: useUserStore().postLogin,
+  postLogout: useUserStore().postLogout,
+  get oms() { return useUserStore().oms },
+  set oms(val) { useUserStore().oms = val },
+  get current() { return useUserStore().current },
+  set current(val) { useUserStore().current = val },
+  router: router
+})
 
 router.isReady().then(() => {
   app.mount('#app');

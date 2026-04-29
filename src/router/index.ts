@@ -5,17 +5,12 @@ import ShipmentDetails from '@/views/ShipmentDetails.vue'
 import Settings from "@/views/Settings.vue"
 import PurchaseOrders from "@/views/PurchaseOrders.vue"
 import PurchaseOrderDetail from "@/views/PurchaseOrderDetail.vue"
-import Shopify from '@/views/Shopify.vue'
 import Returns from '@/views/Returns.vue'
 import ReturnDetails from '@/views/ReturnDetails.vue'
 import TransferOrders from '@/views/TransferOrders.vue';
 import TransferOrderDetail from '@/views/TransferOrderDetail.vue';
-import Notifications from '@/views/Notifications.vue'
-import Login from '@/views/Login.vue'
-
 import { useUserStore } from '@/store/user';
-import { translate, commonUtil } from '@common';
-import { useAuth } from '@/composables/useAuth'
+import { translate, commonUtil, useAuth, ShopifyLogin, ShopifyAppInstall, Login } from '@common'
 
 import { businessOutline, calendar, download, gitPullRequestOutline, settingsOutline } from "ionicons/icons";
 
@@ -33,18 +28,14 @@ declare module 'vue-router' {
 const authGuard = async (to: any, from: any, next: any) => {
   const { isAuthenticated } = useAuth()
   if (!isAuthenticated.value) {
-    next('/login');
+    if (commonUtil.isAppEmbedded()) {
+      next('/shopify-login')
+    } else {
+      next('/login');
+    }
   } else {
     next()
   }
-};
-
-const loginGuard = (to: any, from: any, next: any) => {
-  const { isAuthenticated } = useAuth()
-  if (isAuthenticated.value && !to.query?.token && !to.query?.oms) {
-    next('/')
-  }
-  next();
 };
 
 const routes: Array<RouteRecordRaw> = [
@@ -77,8 +68,12 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/login',
     name: 'Login',
-    component: Login,
-    beforeEnter: loginGuard
+    component: Login
+  },
+  {
+    path: '/shopify-login',
+    name: 'ShopifyLogin',
+    component: ShopifyLogin
   },
   {
     path: "/settings",
@@ -114,9 +109,9 @@ const routes: Array<RouteRecordRaw> = [
     }
   },
   {
-    path: '/shopify',
-    name: 'Shopify',
-    component: Shopify
+    path: '/shopify-app-install',
+    name: 'ShopifyAppInstall',
+    component: ShopifyAppInstall
   },
   {
     path: '/returns',

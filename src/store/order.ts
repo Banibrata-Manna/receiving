@@ -29,10 +29,13 @@ export const useOrderStore = defineStore("order", {
     getCurrent: (state) => state.current,
     isProductAvailableInOrder: (state) => (productId: string) => state.current.items.some((item: any) => item.productId === productId),
     getPOHistory: (state) => state.current.poHistory,
-    getPOItemAccepted: (state) => (productId: string) => {
-      return state.current.poHistory.items
-        ?.filter((item: any) => item.productId === productId)
-        .reduce((sum: any, item: any) => sum + item.quantityAccepted, 0);
+    getPOItemAccepted: (state) => {
+      // Memoize PO history items accepted quantity to optimize lookups in lists.
+      const acceptedMap = state.current.poHistory.items?.reduce((acc: any, item: any) => {
+        acc[item.productId] = (acc[item.productId] || 0) + (Number(item.quantityAccepted) || 0);
+        return acc;
+      }, {}) || {};
+      return (productId: string) => acceptedMap[productId] || 0;
     },
   },
   actions: {

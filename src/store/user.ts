@@ -1,7 +1,16 @@
-import { api, commonUtil, cookieHelper, logger, translate } from "@common";
+import { api, commonUtil, cookieHelper, logger, translate, useNotificationStore, useEmbeddedAppStore, useAuth } from "@common";
 import { defineStore } from "pinia"
 import { DateTime, Settings } from "luxon"
-import { useAuth } from "@/composables/useAuth";
+import router from '@/router';
+import { useProductStore } from "@/store/productStore";
+import { useOrderStore } from "@/store/order";
+import { usePartyStore } from "@/store/party";
+import { useProductStore as useProduct } from "@/store/product";
+import { useReturnStore } from "@/store/return";
+import { useShipmentStore } from "@/store/shipment";
+import { useTransferOrderStore } from "@/store/transferorder";
+import { useUtilStore } from "@/store/util";
+import { firebaseUtil } from "@/utils/firebaseUtil";
 
 interface UserState {
   permissions: any[]
@@ -11,11 +20,11 @@ interface UserState {
     registration: any
   }
   timeZones: any[],
-  currentTimeZoneId: string,
   isEmbedded: boolean
+  oms: any
 }
 
-export const useUserStore = defineStore("appUser", {
+export const useUserStore = defineStore("user", {
   state: (): UserState => ({
     permissions: [],
     current: {},
@@ -24,13 +33,12 @@ export const useUserStore = defineStore("appUser", {
       registration: null
     },
     timeZones: [],
-    currentTimeZoneId: '',
-    isEmbedded: false
+    isEmbedded: false,
+    oms: ""
   }),
   getters: {
     getTimeZones: (state) => state.timeZones,
-    getCurrentTimeZone: (state) => state.currentTimeZoneId,
-    isUserAuthenticated: (state) => !!cookieHelper().get("token"),
+    getCurrentTimeZone: (state) => state.current.timeZone,
     getUserPermissions(state: UserState) {
       return state.permissions
     },
@@ -81,35 +89,6 @@ export const useUserStore = defineStore("appUser", {
       this.pwaState.registration = payload.registration;
       this.pwaState.updateExists = payload.updateExists;
     },
-    async samlLogin(token: string, expirationTime: string) {
-      try {
-        cookieHelper().set("token", token)
-        cookieHelper().set("expirationTime", expirationTime)
-
-        try {
-          const userProfileResp = await api({
-            url: "admin/user/profile",
-            method: "get",
-            baseURL: commonUtil.getMaargURL()
-          }) as any;
-          this.current = userProfileResp.data
-        } catch (error: any) {
-          useAuth().clearAuth();
-          commonUtil.showToast(translate("Failed to fetch user profile information"));
-          console.error("error", error);
-          return Promise.reject(new Error(error));
-        }
-
-        await this.fetchPermissions();
-      } catch (error: any) {
-        // If any of the API call in try block has status code other than 2xx it will be handled in common catch block.
-        // TODO Check if handling of specific status codes is required.
-        commonUtil.showToast(translate('Something went wrong while login. Please contact administrator.'));
-        console.error("error: ", error);
-        return Promise.reject(new Error(error))
-      }
-    },
-
     async fetchUserProfile() {
       try {
         const userProfileResp = await api({
@@ -117,6 +96,7 @@ export const useUserStore = defineStore("appUser", {
           method: "get",
         }) as any;
         this.current = userProfileResp.data
+        useAuth().updateUserId(this.current.userId)
 
         if (this.current.timeZone) {
           Settings.defaultZone = this.current.timeZone;
@@ -129,7 +109,7 @@ export const useUserStore = defineStore("appUser", {
       }
     },
     async fetchPermissions() {
-      const permissionId = import.meta.env.VITE_VUE_APP_PERMISSION_ID;
+      const permissionId = import.meta.env.VITE_APP_PERMISSION_ID;
       const serverPermissions = [] as any;
 
       // TODO Make it configurable from the environment variables.
@@ -181,10 +161,10 @@ export const useUserStore = defineStore("appUser", {
         await api({
           url: "admin/user/profile",
           method: "POST",
-          data: { userId: this.current.userId, userTimeZone: tzId },
+          data: { userId: this.current.userId, timeZone: tzId },
         });
         this.updateUserInfo({ userTimeZone: tzId })
-        this.currentTimeZoneId = tzId
+        this.current.timeZone = tzId
       } catch (error: any) {
         console.error("Failed to set user time zone", error);
         commonUtil.showToast(translate("Failed to set user time zone"));
@@ -210,9 +190,59 @@ export const useUserStore = defineStore("appUser", {
         console.error('Error', err)
       }
     },
-    async logout(payload: any) {
-      const { logout } = useAuth();
-      return await logout(payload);
+    async postLogin() {
+      try {
+        const productStore = useProductStore();
+        await this.fetchUserProfile()
+        await this.fetchPermissions()
+        await productStore.fetchUserFacilities()
+        await productStore.fetchFacilityPreference();
+        await productStore.fetchProductStores()
+        await productStore.fetchProductStoreDependencies(productStore.getCurrentProductStore.productStoreId)
+
+        const notificationStore = useNotificationStore();
+        await notificationStore.fetchAllNotificationPrefs(import.meta.env.VITE_NOTIF_APP_ID as any, this.current.userId)
+        await firebaseUtil.initialiseFirebaseMessaging();
+
+        const facilityId = router.currentRoute.value.query.facilityId
+        if (facilityId) {
+          const facility = this.current.facilities.find((facility: any) => facility.facilityId === facilityId);
+          if (facility) {
+            productStore.currentFacility = facility
+          } else {
+            commonUtil.showToast(translate("Redirecting to home page due to incorrect information being passed."))
+          }
+        }
+      } catch (error: any) {
+        return Promise.reject(error);
+      }
+    },
+    async postLogout() {
+      try {
+        const notificationStore = useNotificationStore();
+        if (notificationStore.getFirebaseDeviceId) await notificationStore.removeClientRegistrationToken(notificationStore.getFirebaseDeviceId, import.meta.env.VITE_NOTIF_APP_ID as any);
+        notificationStore.$reset();
+      } catch (error) {
+        logger.error(error);
+      }
+
+      if (commonUtil.isAppEmbedded()) {
+        setTimeout(() => {
+          window.location.href = window.location.origin + `/shopify-login?shop=${useEmbeddedAppStore().getShop}&host=${useEmbeddedAppStore().getHost}&embedded=1`;
+        }, 100);
+        useEmbeddedAppStore().$reset();
+      }
+
+      useNotificationStore().clearNotificationState();
+      useOrderStore().$reset();
+      usePartyStore().$reset();
+      useProduct().$reset();
+      useProductStore().$reset();
+      useReturnStore().$reset();
+      useShipmentStore().$reset();
+      useTransferOrderStore().$reset();
+      this.$reset();
+      useUtilStore().$reset();
     }
   },
   persist: true

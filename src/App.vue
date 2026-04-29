@@ -28,9 +28,8 @@
 import { IonApp, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonMenu, IonMenuToggle, IonRouterOutlet, IonSplitPane, IonTitle, IonToolbar, loadingController } from '@ionic/vue';
 import { ref, computed, onBeforeMount, onMounted, onUnmounted } from 'vue';
 import router from '@/router'
-import { useAuth } from '@/composables/useAuth'
 import { Settings } from 'luxon';
-import { translate, emitter, useNotificationStore, logger, initialise } from "@common";
+import { translate, emitter, useNotificationStore, logger, useAuth } from "@common";
 import { firebaseUtil } from '@/utils/firebaseUtil';
 import { useUserStore } from '@/store/user';
 import { useProductStore } from '@/store/productStore';
@@ -69,21 +68,9 @@ const selectedIndex = computed(() => {
 
 const loader = ref(null as any);
 const userProfile = computed(() => userStore.getUserProfile);
-const allNotificationPrefs = computed(() => useNotificationStore().allNotificationPrefs);
+const allNotificationPrefs = computed(() => useNotificationStore().getAllNotificationPrefs);
 
-const maxAge = import.meta.env.VITE_VUE_APP_CACHE_MAX_AGE ? parseInt(import.meta.env.VITE_VUE_APP_CACHE_MAX_AGE) : 0
-initialise({
-  cacheMaxAge: maxAge,
-  events: {
-    unauthorised: useAuth().logout,
-    responseError: () => {
-      setTimeout(() => dismissLoader(), 100);
-    },
-    queueTask: (payload: any) => {
-      emitter.emit("queueTask", payload);
-    }
-  }
-})
+
 
 const presentLoader = async (options = { message: '', backdropDismiss: true }) => {
   // When having a custom message remove already existing loader
@@ -125,9 +112,9 @@ onBeforeMount(() => {
 });
 
 onMounted(async () => {
-  const currentEComStore: any = productStore.getCurrentEComStore;
-  if (isAuthenticated.value && currentEComStore?.productStoreId) {
-    await productStore.fetchProductStoreSettings(currentEComStore.productStoreId).catch((error) => logger.error(error));
+  const currentProductStore: any = productStore.getCurrentProductStore;
+  if (isAuthenticated.value && currentProductStore?.productStoreId) {
+    await productStore.fetchProductStoreSettings(currentProductStore.productStoreId).catch((error) => logger.error(error));
 
     if (allNotificationPrefs.value?.length) {
       await firebaseUtil.initialiseFirebaseMessaging();
@@ -136,8 +123,8 @@ onMounted(async () => {
 
   // Handles case when user resumes or reloads the app
   // Luxon timezzone should be set with the user's selected timezone
-  if (userProfile.value && userProfile.value.userTimeZone) {
-    Settings.defaultZone = userProfile.value.userTimeZone;
+  if (userProfile.value && userProfile.value.timeZone) {
+    Settings.defaultZone = userProfile.value.timeZone;
   }
 });
 
